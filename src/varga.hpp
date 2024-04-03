@@ -48,7 +48,7 @@ struct Generator
 };
 
 template <typename TIndividualValue>
-struct MainLoop {
+struct Runner {
     Context<TIndividualValue> context;
     Initializer<TIndividualValue> initializer;
     Evaluator<TIndividualValue> evaluator;
