@@ -5,6 +5,8 @@ struct Individual
 {
     TIndividualValue value;
     double fitness;
+
+    // TODO: add method for init value from random
 };
 
 template <typename TIndividualValue>
