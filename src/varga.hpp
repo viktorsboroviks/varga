@@ -6,6 +6,7 @@ struct Individual
     TIndividualValue value;
     double fitness;
 
+    // TODO: consider pure virtual properties intead of template
     // TODO: add method for init value from random
 };
 
