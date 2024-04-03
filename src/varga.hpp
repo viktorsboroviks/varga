@@ -56,7 +56,8 @@ struct Runner {
     Evaluator<TIndividualValue> evaluator;
     Generator<TIndividualValue> generator;
 
-    // TODO: add constructor
+    // TODO: add constructor, pass objects by reference from outside
+    // TODO: are templates still needed?
     void run() 
     {
         // TODO: add proper run() logic and parameter passing
