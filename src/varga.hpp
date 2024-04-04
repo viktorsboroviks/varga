@@ -1,67 +1,91 @@
 #include <vector>
+#include <chrono>
+#include <random>
+#include <mutex>
+
+
+// base classes
+// - Polulation(Individual)
+// - Context holding all calculation data, including Populations
+// - Runner(Context, Initializer, Evaluator, Generator)
 
 template <typename TIndividualValue>
 struct Individual
 {
     TIndividualValue value;
     double fitness;
-
-    // TODO: consider pure virtual properties intead of template
-    // TODO: add method for init value from random
 };
 
-template <typename TIndividualValue>
+
+template <typename TIndividualType>
 struct Population
 {
-    std::vector<Individual<TIndividualValue> individuals;
+    std::vector<TIndividualType> individuals;
 };
 
-template <typename TIndividualValue>
+
+template <typename TIndividualType>
 struct Context
 {
+    // properties
     size_t ngeneration;
-    Population<TIndividualValue> new_generation;
-    Population<TIndividualValue> prev_generation;
+    Population<TIndividualType> prev_generation;
+    Population<TIndividualType> this_generation;
 };
 
-template <typename TIndividualValue>
+
+template <typename TIndividualType>
 struct Initializer
 {
-    // TODO: define input/output parameter and type
-    // TODO: how exactly it should work
-    // TODO: does it need to be a class, or better - a function?
-    // TODO: can this become a Context constructor?
-    virtual void init(Context<TIndividualValue> &context) {};
+    // TODO: consider removing and intializing populations
+    //       inside Context constructor.
+
+    // initialize this generation
+    // modify the content of `context`
+    virtual void init(Context<TIndividualType> &context) {};
 };
 
-template <typename TIndividualValue>
+
+template <typename TIndividualType>
 struct Evaluator
 {
-    // TODO: define input/output parameter and type
-    // TODO: how exactly it should work
-    virtual void evaluate(Context<TIndividualValue> &context) {};
+    // evaluate the last population
+    // modify the content of `context`
+    virtual void evaluate(Context<TIndividualType> &context) {};
 };
 
-template <typename TIndividualValue>
+
+template <typename TIndividualType>
 struct Generator
 {
-    // TODO: define input/output parameter and type
-    // TODO: how exactly it should work
-    virtual bool generate(Context<TIndividualValue> &context) {};
+    // generate new population
+    // modify the content of `context`
+    // return `true` if more generate() calls required
+    // else return `false`
+    virtual bool generate(Context<TIndividualType> &context) {};
 };
 
-template <typename TIndividualValue>
-struct Runner {
-    Context<TIndividualValue> context;
-    Initializer<TIndividualValue> initializer;
-    Evaluator<TIndividualValue> evaluator;
-    Generator<TIndividualValue> generator;
 
-    // TODO: add constructor, pass objects by reference from outside
-    // TODO: are templates still needed?
+template <typename TIndividualType>
+struct Runner {
+    Context<TIndividualType> context;
+    Initializer<TIndividualType> initializer;
+    Evaluator<TIndividualType> evaluator;
+    Generator<TIndividualType> generator;
+
+    // TODO: do we want to store pointers instead of copies?
+    Runner(Context<TIndividualType> &in_context,
+           Initializer<TIndividualType> &in_initializer,
+           Evaluator<TIndividualType> &in_evaluator,
+           Generator<TIndividualType> &in_generator) :
+        context(in_context),
+        initializer(in_initializer),
+        evaluator(in_evaluator),
+        generator(in_generator)
+        {}
+
     void run() 
     {
-        // TODO: add proper run() logic and parameter passing
         initializer.init(context);
         bool continue_generating = true;
         while (continue_generating) {
@@ -69,4 +93,73 @@ struct Runner {
             continue_generating = generator.generate(context);
         }
     }
+};
+
+
+// extended classes
+
+template <typename TIndividualValue>
+struct IndividualExt : Individual<TIndividualValue>
+{
+    TIndividualValue value;
+    double fitness;
+
+    // initialize the `value` using rnd01() function returning random double in range [0, 1]
+    void from_rnd01(const function<double(void)> &rnd01) {
+        value = rnd01();
+    };
+};
+
+
+template <typename TIndividualType>
+struct ContextExt : Context<TIndividualType>
+{
+    // tools
+    Random random;
+
+    // properties
+    size_t ngeneration;
+    Population<TIndividualType> prev_generation;
+    Population<TIndividualType> this_generation;
+
+    ContextExt(Random in_random) : random(in_random) {}
+};
+
+
+class Random
+{
+    public:
+        // return random double in range [0, 1]
+        // extremely useful when producing random value over range [0, val_max):
+        // val_rnd = rnd01() * val_max
+        virtual const double rnd01(void) {}
+};
+
+
+class RandomOpenGA : Random
+{
+    // thread-safe implementation of rnd01() borrowed from
+    // https://github.com/Arash-codedev/openGA/blob/master/README.md
+    // assuming those people knew what they were doing
+    public:
+        RandomOpenGA()
+        {
+            // initialize the random number generator with time-dependent seed
+            uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+            std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
+            rng.seed(ss);
+            std::uniform_real_distribution<double> unif(0, 1);
+        }
+
+        const double rnd01(void)
+        {
+            // prevent data race between threads
+            std::lock_guard<std::mutex> lock(mtx_rand);
+            return unif_dist(rng);
+        }
+
+    private:
+        std::mutex mtx_rand;
+	    std::mt19937_64 rng;
+	    std::uniform_real_distribution<double> unif_dist;
 };
