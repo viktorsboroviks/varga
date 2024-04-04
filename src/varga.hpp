@@ -4,10 +4,18 @@
 #include <mutex>
 
 
-// base classes
+// base classes:
+// - Individual
+//   - stores values and fitness
 // - Polulation(Individual)
-// - Context holding all calculation data, including Populations
-// - Runner(Context, Initializer, Evaluator, Generator)
+// - Context(Populations)
+//   - holds all calculation data, including Populations
+//   - initializes first Population
+// - Runner(Context, Evaluator, Generator)
+//   - init Context
+//   - execute in loop
+//     - Evaluator.evaluate(Context)
+//     - Generator.generate(Context)
 
 template <typename TIndividualValue>
 struct Individual
@@ -83,7 +91,8 @@ struct Runner {
 };
 
 
-// extended classes
+// extended classes:
+// - added some utility methods
 
 template <typename TIndividualValue>
 struct IndividualExt : Individual<TIndividualValue>
