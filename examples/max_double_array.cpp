@@ -16,6 +16,7 @@ typedef varga::IndividualExt<std::vector<double>> individual_t;
 
 int main()
 {
+    // TODO: init random to this value in ContextExt by default
     varga::RandomOpenGA random;
     varga::ContextExt<individual_t> context{random};
     varga::Evaluator<individual_t> evaluator;
