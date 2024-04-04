@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <chrono>
 #include <random>
@@ -50,7 +51,10 @@ struct Evaluator
 {
     // evaluate the last population
     // modify the content of `context`
-    virtual void evaluate(Context<TIndividualType> &context) {};
+    virtual void evaluate(Context<TIndividualType> &context)
+    {
+        (void) context;
+    }
 };
 
 
@@ -61,7 +65,10 @@ struct Generator
     // modify the content of `context`
     // return `true` if more generate() calls required
     // else return `false`
-    virtual bool generate(Context<TIndividualType> &context) {};
+    virtual bool generate(Context<TIndividualType> &context)
+    {
+        (void) context;
+    }
 };
 
 
@@ -101,9 +108,54 @@ struct IndividualExt : Individual<TIndividualValue>
     double fitness;
 
     // initialize the `value` using rnd01() function returning random double in range [0, 1]
-    void from_rnd01(const function<double(void)> &rnd01) {
+    void from_rnd01(const std::function<double(void)> &rnd01)
+    {
         value = rnd01();
     };
+};
+
+
+class Random
+{
+    public:
+        // return random double in range [0, 1]
+        // extremely useful when producing random value over range [0, val_max):
+        // val_rnd = rnd01() * val_max
+        virtual double rnd01(void)
+        {
+            std::cout << "error: abstract method used" << std::endl;
+            return 0;
+        }
+};
+
+
+class RandomOpenGA : Random
+{
+    // thread-safe implementation of rnd01() borrowed from
+    // https://github.com/Arash-codedev/openGA/blob/master/README.md
+    // assuming those people knew what they were doing
+    public:
+        RandomOpenGA()
+        {
+            // initialize the random number generator with time-dependent seed
+            uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+            std::seed_seq ss {uint32_t(timeSeed & 0xffffffff),
+                              uint32_t(timeSeed>>32)};
+            rng.seed(ss);
+            std::uniform_real_distribution<double> unif(0, 1);
+        }
+
+        double rnd01(void)
+        {
+            // prevent data race between threads
+            std::lock_guard<std::mutex> lock(mtx_rand);
+            return unif_dist(rng);
+        }
+
+    private:
+        std::mutex mtx_rand;
+	    std::mt19937_64 rng;
+	    std::uniform_real_distribution<double> unif_dist;
 };
 
 
@@ -121,41 +173,3 @@ struct ContextExt : Context<TIndividualType>
     ContextExt(Random in_random) : random(in_random) {}
 };
 
-
-class Random
-{
-    public:
-        // return random double in range [0, 1]
-        // extremely useful when producing random value over range [0, val_max):
-        // val_rnd = rnd01() * val_max
-        virtual const double rnd01(void) {}
-};
-
-
-class RandomOpenGA : Random
-{
-    // thread-safe implementation of rnd01() borrowed from
-    // https://github.com/Arash-codedev/openGA/blob/master/README.md
-    // assuming those people knew what they were doing
-    public:
-        RandomOpenGA()
-        {
-            // initialize the random number generator with time-dependent seed
-            uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-            std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
-            rng.seed(ss);
-            std::uniform_real_distribution<double> unif(0, 1);
-        }
-
-        const double rnd01(void)
-        {
-            // prevent data race between threads
-            std::lock_guard<std::mutex> lock(mtx_rand);
-            return unif_dist(rng);
-        }
-
-    private:
-        std::mutex mtx_rand;
-	    std::mt19937_64 rng;
-	    std::uniform_real_distribution<double> unif_dist;
-};
