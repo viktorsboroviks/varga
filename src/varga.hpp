@@ -27,22 +27,13 @@ struct Population
 template <typename TIndividualType>
 struct Context
 {
-    // properties
     size_t ngeneration;
+
     Population<TIndividualType> prev_generation;
     Population<TIndividualType> this_generation;
-};
 
-
-template <typename TIndividualType>
-struct Initializer
-{
-    // TODO: consider removing and intializing populations
-    //       inside Context constructor.
-
-    // initialize this generation
-    // modify the content of `context`
-    virtual void init(Context<TIndividualType> &context) {};
+    // init of this_generation for the first generation
+    // is also intended to happen in this class.
 };
 
 
@@ -69,24 +60,20 @@ struct Generator
 template <typename TIndividualType>
 struct Runner {
     Context<TIndividualType> context;
-    Initializer<TIndividualType> initializer;
     Evaluator<TIndividualType> evaluator;
     Generator<TIndividualType> generator;
 
     // TODO: do we want to store pointers instead of copies?
     Runner(Context<TIndividualType> &in_context,
-           Initializer<TIndividualType> &in_initializer,
            Evaluator<TIndividualType> &in_evaluator,
            Generator<TIndividualType> &in_generator) :
         context(in_context),
-        initializer(in_initializer),
         evaluator(in_evaluator),
         generator(in_generator)
         {}
 
     void run() 
     {
-        initializer.init(context);
         bool continue_generating = true;
         while (continue_generating) {
             evaluator.evaluate(context);
