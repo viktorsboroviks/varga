@@ -61,12 +61,21 @@ namespace varga
     //     - Evaluator.evaluate(Context)
     //     - Generator.generate(Context)
 
-    template <typename TIndividualGenes>
+    template <typename TGenes>
     struct Individual
     {
-        // define your own Individual gene(s)
-        // TODO: consider using c++20 'requires' keyword
-        TIndividualGenes genes;
+        // virtual destructor is required if virtual methods are used
+        virtual ~Individual() {}
+
+        virtual void randomize(const std::function<double(void)> &rnd01)
+        {
+            std::cout << rnd01() << std::endl;
+        }
+        virtual void single_point_crossover(void) {}
+        virtual void evaluate_fitness(void) {}
+        virtual void random_mutation(void) {}
+
+        TGenes genes;
         double fitness;
     };
 
@@ -74,7 +83,6 @@ namespace varga
     template <typename TIndividual>
     struct Population
     {
-        // TODO: consider using c++20 'requires' keyword instead
         std::vector<TIndividual> individuals;
     };
 
@@ -94,56 +102,38 @@ namespace varga
 
 
     template <typename TIndividual>
-    struct Evaluator
+    void init_first_generation(Context<TIndividual>& context)
     {
-        // evaluate the last population
-        // modify the content of `context`
-        virtual void evaluate(Context<TIndividual> &context)
-        {
-            (void) context;
+        for (auto &i : context.this_generation.individuals) {
+            i.randomize([&context](){return context.random.rnd01();});
         }
-    };
-
+    }
 
     template <typename TIndividual>
-    struct Generator
-    {
-        // generate new population
-        // modify the content of `context`
-        // return `true` if more generate() calls required
-        // else return `false`
-        virtual bool generate(Context<TIndividual> &context)
-        {
-            (void) context;
-            std::cout << "error: abstract method used" << std::endl;
-            return false;
-        }
-    };
+    class Runner {
+        private:
+            Context<TIndividual> *p_context;
 
+        public:
+            typedef std::function<void(Context<TIndividual>&)> function_t;
 
-    template <typename TIndividual>
-    struct Runner {
-        Context<TIndividual> context;
-        Evaluator<TIndividual> evaluator;
-        Generator<TIndividual> generator;
+            Runner(Context<TIndividual>& in_context) : p_context(&in_context) {}
 
-        // TODO: do we want to store pointers instead of copies?
-        Runner(Context<TIndividual> &in_context,
-               Evaluator<TIndividual> &in_evaluator,
-               Generator<TIndividual> &in_generator) :
-            context(in_context),
-            evaluator(in_evaluator),
-            generator(in_generator)
-            {}
+            function_t f_init_first_generation = init_first_generation<TIndividual>;
+            function_t f_select_parents = nullptr;
+            function_t f_crossover = nullptr;
+            function_t f_mutate = nullptr;
+            function_t f_generate = nullptr;
 
-        void run()
-        {
-            bool continue_generating = true;
-            while (continue_generating) {
-                evaluator.evaluate(context);
-                continue_generating = generator.generate(context);
+            void run()
+            {
+                f_init_first_generation(*p_context);
+                while (p_context->continue_generating) {
+                    f_select_parents(*p_context);
+                    f_crossover(*p_context);
+                    f_mutate(*p_context);
+                    f_generate(*p_context);
+                }
             }
-        }
     };
-
 }

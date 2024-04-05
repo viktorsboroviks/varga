@@ -1,7 +1,6 @@
 # TODO
 
 - consider `decltype` intead of template with 2 arguments
-- consider reducing the amount of templates
 - add example
 - add style guide
   - something standard and simple
