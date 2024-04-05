@@ -134,6 +134,10 @@ namespace varga
 
             Runner(Context<TIndividual>& in_context) : p_context(&in_context) {}
 
+            // configuration of .run() algorithm is implemented via
+            // assigning pointers to major runner functons.
+            // if needed, those can be re-assigned before .run() to other
+            // standard or custom calls.
             function_t f_init_first_generation = init_first_generation<TIndividual>;
             function_t f_evaluate = evaluate<TIndividual>;
             function_t f_select_parents = nullptr;
