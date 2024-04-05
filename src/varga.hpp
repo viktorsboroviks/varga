@@ -3,6 +3,7 @@
 #include <chrono>
 #include <random>
 #include <mutex>
+#include <functional>
 
 
 namespace varga
@@ -173,7 +174,9 @@ namespace varga
         Population<TIndividualType> prev_generation;
         Population<TIndividualType> this_generation;
 
+        // TODO: ask if this can be made something like
+        // ContextExt(Random in_random = RandomOpenGA()) : random(in_random) {}
+        ContextExt() : random(RandomOpenGA()) {}
         ContextExt(Random in_random) : random(in_random) {}
     };
-
 }
