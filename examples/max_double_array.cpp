@@ -46,6 +46,17 @@ size_t g_individual_ngenes = 100;
 //};
 
 // TODO
+// - MyIndividual(context?)
+//   - from_rnd01() <- in generator?
+// - MyEvaluator(context)
+//   - evaluate() <- virtual?
+// - GeneratorExt(context)
+//   - init_first_generation() <- virtual?
+//   - select_parents() <- virtual?
+//   - crossover() <- virtual?
+//   - mutate() <- virtual?
+// - MyGenerator()
+//
 // - Parent selection = steady state selection
 //     - num_parents_mating = 3
 //     - population = 10

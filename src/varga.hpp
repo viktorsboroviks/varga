@@ -130,7 +130,6 @@ namespace varga
     };
 
 
-    // TODO: try to remove public
     class RandomOpenGA : public Random
     {
         // thread-safe implementation of rnd01() borrowed from
