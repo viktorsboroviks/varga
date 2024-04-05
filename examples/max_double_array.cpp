@@ -11,20 +11,26 @@
 //     - crossover
 // - Mutation = random
 
-typedef varga::Individual<std::vector<double>> my_individual_t;
-
-template <typename TGenes>
-class MyIndividual : varga::Individual<TGenes>
+struct MyIndividual : varga::Individual<std::vector<double>>
 {
-    void randomize(void) {}
-        virtual void single_point_crossover(void) {}
-        virtual void evaluate_fitness(void) {}
-        virtual void random_mutation(void) {}
+    void randomize(const std::function<double(void)> &rnd01)
+    {
+        for (auto& g : genes) {
+            g = rnd01();
+        }
+    }
+    double get_fitness(void) {
+        double fitness = 0;
+        for (auto& g : genes) {
+            fitness += g;
+        }
+        return fitness;
+    }
 };
 
 int main()
 {
-    varga::Context<my_individual_t> context;
-    varga::Runner<my_individual_t> runner{context};
+    varga::Context<MyIndividual> context;
+    varga::Runner<MyIndividual> runner{context};
     return 0;
 }
