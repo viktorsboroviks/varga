@@ -79,6 +79,7 @@ namespace varga
         virtual void single_point_crossover(void) {}
         virtual void random_mutation(void) {}
 
+        // genetic data
         TGenes genes;
     };
 
