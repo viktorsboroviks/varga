@@ -56,15 +56,13 @@ size_t g_individual_ngenes = 100;
 //     - crossover
 // - Mutation = random
 
-//typedef varga::IndividualExt<std::vector<double>> individual_t;
-//typedef std::vector<individual_t> population_t;
+typedef varga::IndividualExt<std::vector<double>> individual_t;
 
 int main()
 {
-//    MyPopulation initial_population;
-//    varga::ContextExt context(initial_population);
-//    varga::Evaluator evaluator;
-//    varga::Generator generator;
-//    varga::Runner runner{context, evaluator, generator};
+    varga::ContextExt<individual_t> context;
+    varga::Evaluator<individual_t> evaluator;
+    varga::Generator<individual_t> generator;
+    varga::Runner<individual_t> runner{context, evaluator, generator};
     return 0;
 }

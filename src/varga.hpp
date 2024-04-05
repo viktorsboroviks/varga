@@ -39,42 +39,37 @@ namespace varga
     };
 
 
-    template <typename TPopulation, typename TIndividual>
+    template <typename TIndividual>
     struct Context
     {
         // properties
         size_t ngeneration;
         // TODO: make this a private array and swap 2 public pointers
-        TPopulation this_generation;
-        TPopulation prev_generation;
-
-        Context(TPopulation initial_population) :
-            this_generation(initial_population),
-            prev_generation(initial_population)
-            {}
+        Population<TIndividual> this_generation;
+        Population<TIndividual> prev_generation;
     };
 
 
-    template <typename TPopulation, typename TIndividual>
+    template <typename TIndividual>
     struct Evaluator
     {
         // evaluate the last population
         // modify the content of `context`
-        virtual void evaluate(Context<TPopulation, TIndividual> &context)
+        virtual void evaluate(Context<TIndividual> &context)
         {
             (void) context;
         }
     };
 
 
-    template <typename TPopulation, typename TIndividual>
+    template <typename TIndividual>
     struct Generator
     {
         // generate new population
         // modify the content of `context`
         // return `true` if more generate() calls required
         // else return `false`
-        virtual bool generate(Context<TPopulation, TIndividual> &context)
+        virtual bool generate(Context<TIndividual> &context)
         {
             (void) context;
             std::cout << "error: abstract method used" << std::endl;
@@ -83,16 +78,16 @@ namespace varga
     };
 
 
-    template <typename TPopulation, typename TIndividual>
+    template <typename TIndividual>
     struct Runner {
-        Context<TPopulation, TIndividual> context;
-        Evaluator<TPopulation, TIndividual> evaluator;
-        Generator<TPopulation, TIndividual> generator;
+        Context<TIndividual> context;
+        Evaluator<TIndividual> evaluator;
+        Generator<TIndividual> generator;
 
         // TODO: do we want to store pointers instead of copies?
-        Runner(Context<TPopulation, TIndividual> &in_context,
-               Evaluator<TPopulation, TIndividual> &in_evaluator,
-               Generator<TPopulation, TIndividual> &in_generator) :
+        Runner(Context<TIndividual> &in_context,
+               Evaluator<TIndividual> &in_evaluator,
+               Generator<TIndividual> &in_generator) :
             context(in_context),
             evaluator(in_evaluator),
             generator(in_generator)
@@ -166,8 +161,8 @@ namespace varga
     };
 
 
-    template <typename TPopulation, typename TIndividual>
-    struct ContextExt : Context<TPopulation, TIndividual>
+    template <typename TIndividual>
+    struct ContextExt : Context<TIndividual>
     {
         // tools
         Random random = RandomOpenGA();
