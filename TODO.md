@@ -1,5 +1,6 @@
 # TODO
 
+- consider passing a list of callbacks to Runner
 - consider `decltype` intead of template with 2 arguments
 - add example
 - add style guide
