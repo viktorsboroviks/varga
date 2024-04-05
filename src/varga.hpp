@@ -69,14 +69,17 @@ namespace varga
 
         virtual void randomize(const std::function<double(void)> &rnd01)
         {
-            std::cout << rnd01() << std::endl;
+            (void) rnd01();
+            std::cout << "error: method not implemented" << std::endl;
+        }
+        virtual double get_fitness(void) {
+            std::cout << "error: method not implemented" << std::endl;
+            return -1.0;
         }
         virtual void single_point_crossover(void) {}
-        virtual void evaluate_fitness(void) {}
         virtual void random_mutation(void) {}
 
         TGenes genes;
-        double fitness;
     };
 
 
@@ -84,6 +87,7 @@ namespace varga
     struct Population
     {
         std::vector<TIndividual> individuals;
+        std::vector<double> fitness;
     };
 
 
@@ -110,6 +114,16 @@ namespace varga
     }
 
     template <typename TIndividual>
+    void evaluate(Context<TIndividual>& context)
+    {
+        // calculate fitness
+        for (size_t i = 0; i < context.this_generation.individuals.size(); i++) {
+            context.this_generation.fitness[i] = \
+                context.this_generation.individuals[i].get_fitness();
+        }
+    }
+
+    template <typename TIndividual>
     class Runner {
         private:
             Context<TIndividual> *p_context;
@@ -120,6 +134,7 @@ namespace varga
             Runner(Context<TIndividual>& in_context) : p_context(&in_context) {}
 
             function_t f_init_first_generation = init_first_generation<TIndividual>;
+            function_t f_evaluate = evaluate<TIndividual>;
             function_t f_select_parents = nullptr;
             function_t f_crossover = nullptr;
             function_t f_mutate = nullptr;
@@ -129,6 +144,7 @@ namespace varga
             {
                 f_init_first_generation(*p_context);
                 while (p_context->continue_generating) {
+                    f_evaluate(*p_context);
                     f_select_parents(*p_context);
                     f_crossover(*p_context);
                     f_mutate(*p_context);
