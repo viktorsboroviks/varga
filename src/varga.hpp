@@ -21,54 +21,60 @@ namespace varga
     //     - Evaluator.evaluate(Context)
     //     - Generator.generate(Context)
 
-    template <typename TIndividualValue>
+    template <typename TIndividualGenes>
     struct Individual
     {
-        TIndividualValue value;
+        // define your own Individual gene(s)
+        // TODO: consider using c++20 'requires' keyword
+        TIndividualGenes genes;
         double fitness;
     };
 
 
-    template <typename TIndividualType>
+    template <typename TIndividual>
     struct Population
     {
-        std::vector<TIndividualType> individuals;
+        // TODO: consider using c++20 'requires' keyword instead
+        std::vector<TIndividual> individuals;
     };
 
 
-    template <typename TIndividualType>
+    template <typename TPopulation, typename TIndividual>
     struct Context
     {
+        // properties
         size_t ngeneration;
+        // TODO: make this a private array and swap 2 public pointers
+        TPopulation this_generation;
+        TPopulation prev_generation;
 
-        Population<TIndividualType> prev_generation;
-        Population<TIndividualType> this_generation;
-
-        // init of this_generation for the first generation
-        // is also intended to happen in this class.
+        Context(TPopulation initial_population) :
+            this_generation(initial_population),
+            prev_generation(initial_population)
+            {}
     };
 
 
-    template <typename TIndividualType>
+    template <typename TPopulation, typename TIndividual>
     struct Evaluator
     {
         // evaluate the last population
         // modify the content of `context`
-        virtual void evaluate(Context<TIndividualType> &context)
+        virtual void evaluate(Context<TPopulation, TIndividual> &context)
         {
             (void) context;
         }
     };
 
 
-    template <typename TIndividualType>
+    template <typename TPopulation, typename TIndividual>
     struct Generator
     {
         // generate new population
         // modify the content of `context`
         // return `true` if more generate() calls required
         // else return `false`
-        virtual bool generate(Context<TIndividualType> &context)
+        virtual bool generate(Context<TPopulation, TIndividual> &context)
         {
             (void) context;
             std::cout << "error: abstract method used" << std::endl;
@@ -77,16 +83,16 @@ namespace varga
     };
 
 
-    template <typename TIndividualType>
+    template <typename TPopulation, typename TIndividual>
     struct Runner {
-        Context<TIndividualType> context;
-        Evaluator<TIndividualType> evaluator;
-        Generator<TIndividualType> generator;
+        Context<TPopulation, TIndividual> context;
+        Evaluator<TPopulation, TIndividual> evaluator;
+        Generator<TPopulation, TIndividual> generator;
 
         // TODO: do we want to store pointers instead of copies?
-        Runner(Context<TIndividualType> &in_context,
-               Evaluator<TIndividualType> &in_evaluator,
-               Generator<TIndividualType> &in_generator) :
+        Runner(Context<TPopulation, TIndividual> &in_context,
+               Evaluator<TPopulation, TIndividual> &in_evaluator,
+               Generator<TPopulation, TIndividual> &in_generator) :
             context(in_context),
             evaluator(in_evaluator),
             generator(in_generator)
@@ -106,17 +112,13 @@ namespace varga
     // extended classes:
     // - added some utility methods
 
-    template <typename TIndividualValue>
-    struct IndividualExt : Individual<TIndividualValue>
+    template <typename TIndividualGenes>
+    struct IndividualExt : Individual<TIndividualGenes>
     {
-        TIndividualValue value;
-        double fitness;
-
-        // initialize the `value` using rnd01() function returning random double in range [0, 1]
-        void from_rnd01(const std::function<double(void)> &rnd01)
-        {
-            value = rnd01();
-        };
+        // initialize the genes using rnd01() function returning random double in range [0, 1]
+        virtual void from_rnd01(const std::function<double(void)> &rnd01) {
+            (void) rnd01();
+        }
     };
 
 
@@ -133,6 +135,7 @@ namespace varga
     };
 
 
+    // TODO: try to remove public
     class RandomOpenGA : public Random
     {
         // thread-safe implementation of rnd01() borrowed from
@@ -163,20 +166,10 @@ namespace varga
     };
 
 
-    template <typename TIndividualType>
-    struct ContextExt : Context<TIndividualType>
+    template <typename TPopulation, typename TIndividual>
+    struct ContextExt : Context<TPopulation, TIndividual>
     {
         // tools
-        Random random;
-
-        // properties
-        size_t ngeneration;
-        Population<TIndividualType> prev_generation;
-        Population<TIndividualType> this_generation;
-
-        // TODO: ask if this can be made something like
-        // ContextExt(Random in_random = RandomOpenGA()) : random(in_random) {}
-        ContextExt() : random(RandomOpenGA()) {}
-        ContextExt(Random in_random) : random(in_random) {}
+        Random random = RandomOpenGA();
     };
 }
