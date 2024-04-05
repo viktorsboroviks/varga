@@ -72,11 +72,14 @@ namespace varga
             (void) rnd01();
             std::cout << "error: method not implemented" << std::endl;
         }
+
         virtual double get_fitness(void) {
             std::cout << "error: method not implemented" << std::endl;
             return -1.0;
         }
+
         virtual void single_point_crossover(void) {}
+
         virtual void random_mutation(void) {}
 
         // genetic data

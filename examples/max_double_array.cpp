@@ -19,6 +19,7 @@ struct MyIndividual : varga::Individual<std::vector<double>>
             g = rnd01();
         }
     }
+
     double get_fitness(void) {
         double fitness = 0;
         for (auto& g : genes) {
