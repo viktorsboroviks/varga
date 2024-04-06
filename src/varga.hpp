@@ -123,7 +123,7 @@ namespace varga
                 prev_generation(generation_a),
                 next_generation(generation_b) {}
 
-            void change_generation()
+            void switch_generation()
             {
                 i_generation++;
 
@@ -220,9 +220,9 @@ namespace varga
     }
 
     template <typename TIndividual>
-    void change_generation(Context<TIndividual>& context)
+    void switch_generation(Context<TIndividual>& context)
     {
-        context.change_generation();
+        context.switch_generation();
     }
 
     template <typename TIndividual>
