@@ -70,7 +70,7 @@ int main()
 //                          varga::single_point_crossover<MyIndividual>,
 //                          varga::random_mutation<MyIndividual>,
 //                          varga::print_context<MyIndividual>,
-                          varga::change_generation<MyIndividual>};
+                          varga::switch_generation<MyIndividual>};
     sm.run();
     return 0;
 }
