@@ -4,6 +4,7 @@
 #include <random>
 #include <mutex>
 #include <functional>
+#include <cassert>
 
 
 namespace varga
@@ -95,33 +96,37 @@ namespace varga
     template <typename TIndividual>
     struct Population
     {
-        Population(size_t in_size) : individuals(in_size), fitness(in_size) {}
+        Population(size_t in_size) :
+            individuals(in_size),
+            fitness(in_size),
+            sorted_idx(in_size) {}
 
         std::vector<TIndividual> individuals;
         std::vector<double> fitness;
+        std::vector<size_t> sorted_idx;
+        std::vector<size_t> parents_idx{0};
     };
 
 
     template <typename TIndividual>
     struct Context
     {
-        // TODO: properly init generations, make prev_ const
-        Context(size_t in_n_generations, size_t in_population_size) :
-            n_generations(in_n_generations),
-            this_generation(in_population_size),
-            prev_generation(in_population_size) {}
+        Context(size_t in_population_size) :
+            prev_generation(in_population_size),
+            next_generation(0) {}
 
-        // tools
-        Random random{};
+        // config
+        size_t n_generations = 0;
+        size_t n_parents_mating = 0;
 
         // properties
-        const size_t n_generations;
         size_t i_generation = 0;
         bool stop_state_machine = false;
 
-        // TODO: make this a private array and swap 2 public pointers
-        Population<TIndividual> this_generation;
+        // tools
+        Random random{};
         Population<TIndividual> prev_generation;
+        Population<TIndividual> next_generation;
     };
 
 
@@ -136,6 +141,9 @@ namespace varga
 
             void run()
             {
+                for (state_function_t &f : init_functions) {
+                    f(*p_context);
+                }
                 while (!p_context->stop_state_machine) {
                     for (state_function_t &f : state_functions) {
                         f(*p_context);
@@ -143,19 +151,17 @@ namespace varga
                 }
             }
 
+            std::vector<state_function_t> init_functions;
             std::vector<state_function_t> state_functions;
     };
 
 
     template <typename TIndividual>
-    void init_first_generation(Context<TIndividual>& context)
+    void randomize_prev_generation(Context<TIndividual>& context)
     {
-        // run only for the 0th generation
-        if (context.i_generation != 0) {
-            return;
-        }
+        assert (context.i_generation == 0);
 
-        for (auto &i : context.this_generation.individuals) {
+        for (auto &i : context.prev_generation.individuals) {
             i.randomize([&context](){return context.random.rnd01();});
         }
     }
@@ -165,9 +171,9 @@ namespace varga
     void evaluate(Context<TIndividual>& context)
     {
         // calculate fitness
-        for (size_t i = 0; i < context.this_generation.individuals.size(); i++) {
-            context.this_generation.fitness[i] = \
-                context.this_generation.individuals[i].get_fitness();
+        for (size_t i = 0; i < context.next_generation.individuals.size(); i++) {
+            context.next_generation.fitness[i] = \
+                context.next_generation.individuals[i].get_fitness();
         }
     }
 
@@ -175,16 +181,16 @@ namespace varga
     void print_context(Context<TIndividual>& context)
     {
         std::cout << "i_geneation: " << context.i_generation << std::endl;
-        std::cout << "this_generation: " << std::endl;
-        for (size_t i = 0; i < context.this_generation.individuals.size(); i++) {
+        std::cout << "next_generation: " << std::endl;
+        for (size_t i = 0; i < context.next_generation.individuals.size(); i++) {
             std::cout
                 << "\tindividuals[" << i << "]:" << std::endl
-                << context.this_generation.individuals[i].to_string(2);
+                << context.next_generation.individuals[i].to_string(2);
         }
     }
 
     template <typename TIndividual>
-    void inc_ngeneration(Context<TIndividual>& context)
+    void next_generation(Context<TIndividual>& context)
     {
         context.i_generation++;
 
@@ -194,4 +200,19 @@ namespace varga
         }
     }
 
+    template <typename TIndividual>
+    void steady_state_selection(Context<TIndividual>& context)
+    {
+        for (size_t i = 0; i < context.prev_generation.individuals.size(); i++) {
+            context.next_generation.sorted_idx[i] = i;
+        }
+//        std::sort(
+//            context.next_generation.sorted_idx.begin(),
+//            context.next_generation.sorted_idx.end(),
+//            [&gen](int a,int b)->bool
+//            {
+//                return gen.chromosomes[a].total_cost < gen.chromosomes[b].total_cost;
+//            });
+    }
 }
+
