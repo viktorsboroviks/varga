@@ -6,7 +6,7 @@ examples: max_double_array.o
 
 max_double_array.o: examples/max_double_array.cpp
 	g++ -Wall -Wextra -Werror -Wpedantic \
-		-std=c++11 -O3 \
+		-std=c++20 -O3 \
 		-I./src \
 		examples/max_double_array.cpp -o max_double_array.o
 
