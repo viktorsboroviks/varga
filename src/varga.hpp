@@ -167,8 +167,8 @@ namespace varga
                 }
             }
 
-            std::vector<state_function_t> init_functions;
-            std::vector<state_function_t> state_functions;
+            std::vector<state_function_t> init_functions{};
+            std::vector<state_function_t> state_functions{};
     };
 
 
