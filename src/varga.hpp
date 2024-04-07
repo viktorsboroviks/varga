@@ -114,26 +114,26 @@ namespace varga
     {
         private:
             size_t i_generation_priv = 0;
-            Population<TIndividual> generation_a;
-            Population<TIndividual> generation_b;
+            Population<TIndividual> population_storage_a;
+            Population<TIndividual> population_storage_b;
 
         public:
             Context(size_t in_population_size) :
-                generation_a(in_population_size),
-                generation_b(0),
-                prev_generation(generation_a),
-                next_generation(generation_b) {}
+                population_storage_a(in_population_size),
+                population_storage_b(0),
+                prev_generation(population_storage_a),
+                next_generation(population_storage_b) {}
 
             void inc_generation()
             {
                 i_generation_priv++;
 
-                if (&generation_a == &prev_generation) {
-                    prev_generation = generation_b;
-                    next_generation = generation_a;
+                if (&population_storage_a == &prev_generation) {
+                    prev_generation = population_storage_b;
+                    next_generation = population_storage_a;
                 } else {
-                    prev_generation = generation_a;
-                    next_generation = generation_b;
+                    prev_generation = population_storage_a;
+                    next_generation = population_storage_b;
                 }
 
                 // cleanup
