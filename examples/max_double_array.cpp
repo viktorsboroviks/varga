@@ -5,7 +5,7 @@
 const size_t g_n_generations = 100;
 const size_t g_population_size = 10;
 const size_t g_individual_n_genes = 2;
-const size_t g_n_parents_mating = 3;
+const size_t g_n_parents = 3;
 
 
 struct MyIndividual : varga::Individual<std::vector<double>>
@@ -60,15 +60,15 @@ int main()
 {
     varga::Context<MyIndividual> c{g_population_size};
     c.n_generations = g_n_generations;
-    c.n_parents_mating = g_n_parents_mating;
+    c.n_parents = g_n_parents;
 
     varga::StateMachine<MyIndividual> sm{c};
     sm.init_functions = {varga::randomize_prev_generation<MyIndividual>};
     sm.state_functions = {varga::evaluate_prev_generation<MyIndividual>,
-                          varga::select_best_parents<MyIndividual>,
+                          varga::select_parents_as_most_fit<MyIndividual>,
                           varga::move_parents_to_next_generation<MyIndividual>,
-//                          varga::single_point_crossover<MyIndividual>,
-//                          varga::random_mutation<MyIndividual>,
+                          varga::add_children_from_single_point_crossover<MyIndividual>,
+                          varga::random_mutation<MyIndividual>,
 //                          varga::print_context<MyIndividual>,
                           varga::change_generations<MyIndividual>};
     sm.run();

@@ -139,7 +139,7 @@ namespace varga
         Population<TIndividual>& next_generation;
 
         size_t n_generations = 0;
-        size_t n_parents_mating = 0;
+        size_t n_parents = 0;
 
         size_t i_generation = 0;
         bool stop_state_machine = false;
@@ -170,6 +170,23 @@ namespace varga
             std::vector<state_function_t> init_functions{};
             std::vector<state_function_t> state_functions{};
     };
+
+
+    template <typename TIndividual>
+    void change_generations(Context<TIndividual>& c)
+    {
+        c.i_generation++;
+        if (c.i_generation >= c.n_generations) {
+            c.stop_state_machine = true;
+            return;
+        }
+
+        c.swap_generations();
+
+        // clean the space for the next generation
+        c.next_generation.parents_idx.resize(0);
+        c.next_generation.individuals.resize(0);
+    }
 
 
     template <typename TIndividual>
@@ -210,23 +227,7 @@ namespace varga
 
 
     template <typename TIndividual>
-    void change_generations(Context<TIndividual>& c)
-    {
-        c.i_generation++;
-        if (c.i_generation >= c.n_generations) {
-            c.stop_state_machine = true;
-            return;
-        }
-
-        c.swap_generations();
-
-        // clean the space for the next generation
-        c.next_generation.parents_idx.resize(0);
-        c.next_generation.individuals.resize(0);
-    }
-
-    template <typename TIndividual>
-    void select_best_parents(Context<TIndividual>& c)
+    void select_parents_as_most_fit(Context<TIndividual>& c)
     {
         // init .sorted_idx
         size_t population_size = c.prev_generation.individuals.size();
@@ -248,29 +249,37 @@ namespace varga
 
         // select parents
         assert(c.next_generation.parents_idx.size() == 0);
-        for (size_t i = 0; i < c.n_parents_mating; i++) {
+        for (size_t i = 0; i < c.n_parents; i++) {
             size_t parent_i = c.prev_generation.sorted_idx[i];
             c.next_generation.parents_idx.push_back(parent_i);
         }
     }
 
+
     template <typename TIndividual>
     void move_parents_to_next_generation(Context<TIndividual>& c)
     {
         // also known as "steady state selection"
-        assert(c.next_generation.parents_idx.size() == c.n_parents_mating);
+        assert(c.next_generation.parents_idx.size() == c.n_parents);
         assert(c.next_generation.individuals.size() == 0);
-        for (size_t i = 0; i < c.n_parents_mating; i++) {
+        for (size_t i = 0; i < c.n_parents; i++) {
             size_t parent_i = c.next_generation.parents_idx[i];
             TIndividual parent = c.prev_generation.individuals[parent_i];
             c.next_generation.individuals.push_back(parent);
         }
     }
 
+
     template <typename TIndividual>
-    void single_point_crossover(Context<TIndividual>& c)
+    void add_children_from_single_point_crossover(Context<TIndividual>& c)
     {
-        // fill population with childred
+        (void) c;
+    }
+
+
+    template <typename TIndividual>
+    void random_mutation(Context<TIndividual>& c)
+    {
         (void) c;
     }
 }
