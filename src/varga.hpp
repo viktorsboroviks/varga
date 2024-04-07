@@ -67,7 +67,8 @@ namespace varga
         // virtual destructor is required if virtual methods are used
         virtual ~Individual() {}
 
-        virtual std::string to_string(size_t n_tabs = 0) {
+        virtual std::string to_string(size_t n_tabs = 0)
+        {
             (void) n_tabs;
             std::cout << "error: method not implemented" << std::endl;
             return "error: method not implemented";
@@ -79,16 +80,27 @@ namespace varga
             std::cout << "error: method not implemented" << std::endl;
         }
 
-        virtual double get_fitness(void) {
+        virtual double get_fitness(void)
+        {
             std::cout << "error: method not implemented" << std::endl;
             return -1.0;
         }
 
-        virtual void single_point_crossover(void) {}
+        virtual void single_point_crossover(const std::function<double(void)> &rnd01,
+                                            Individual<TGenes>& parent_a,
+                                            Individual<TGenes>& parent_b)
+        {
+            (void) rnd01();
+            (void) parent_a;
+            (void) parent_b;
+            std::cout << "error: method not implemented" << std::endl;
+        }
 
-        virtual void random_mutation(void) {}
+        virtual void random_mutation(void)
+        {
+            std::cout << "error: method not implemented" << std::endl;
+        }
 
-        // genetic data
         TGenes genes;
     };
 
@@ -119,9 +131,14 @@ namespace varga
         public:
             Context(size_t in_population_size) :
                 population_storage_a(in_population_size),
-                population_storage_b(0),
+                population_storage_b(in_population_size),
                 prev_generation(population_storage_a),
-                next_generation(population_storage_b) {}
+                next_generation(population_storage_b)
+            {
+                // clean the space for the next generation
+                next_generation.parents_idx.resize(0);
+                next_generation.individuals.resize(0);
+            }
 
             void swap_generations()
             {
@@ -259,7 +276,6 @@ namespace varga
     template <typename TIndividual>
     void move_parents_to_next_generation(Context<TIndividual>& c)
     {
-        // also known as "steady state selection"
         assert(c.next_generation.parents_idx.size() == c.n_parents);
         assert(c.next_generation.individuals.size() == 0);
         for (size_t i = 0; i < c.n_parents; i++) {
@@ -273,7 +289,20 @@ namespace varga
     template <typename TIndividual>
     void create_children_from_single_point_crossover(Context<TIndividual>& c)
     {
-        (void) c;
+        assert(c.next_generation.parents_idx.size() == c.n_parents);
+        assert(c.next_generation.individuals.size() == c.n_parents);
+        const size_t population_size = c.prev_generation.individuals.size();
+        for (size_t i = c.n_parents; i < population_size; i++) {
+            size_t parent_a_i = c.n_parents * c.random.rnd01();
+            size_t parent_b_i = c.n_parents * c.random.rnd01();
+            TIndividual& parent_a = c.next_generation.individuals[parent_a_i];
+            TIndividual& parent_b = c.next_generation.individuals[parent_b_i];
+            TIndividual child{};
+            child.single_point_crossover([&c](){return c.random.rnd01();},
+                                         parent_a, parent_b);
+            c.next_generation.individuals.push_back(child);
+        }
+        assert(c.next_generation.individuals.size() == c.prev_generation.individuals.size());
     }
 
 

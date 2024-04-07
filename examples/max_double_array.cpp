@@ -43,6 +43,30 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         }
         return fitness;
     }
+
+    void single_point_crossover(const std::function<double(void)> &rnd01,
+                                Individual<std::vector<double>>& parent_a,
+                                Individual<std::vector<double>>& parent_b)
+    {
+        assert(genes.size() != 0);
+        assert(parent_a.genes.size() != 0);
+        assert(parent_b.genes.size() != 0);
+        assert(genes.size() == parent_a.genes.size());
+        assert(parent_a.genes.size() == parent_b.genes.size());
+        size_t crossover_i = rnd01() * genes.size();
+        for (size_t i = 0; i < genes.size(); i++) {
+            if (i < crossover_i) {
+                genes[i] = parent_a.genes[i];
+            } else {
+                genes[i] = parent_b.genes[i];
+            }
+        }
+    }
+
+    virtual void random_mutation(void)
+    {
+        std::cout << "error: method not implemented" << std::endl;
+    }
 };
 
 
