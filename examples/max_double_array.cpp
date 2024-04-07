@@ -2,10 +2,11 @@
 #include <sstream>
 #include "varga.hpp"
 
-const size_t g_n_generations = 100;
+const size_t g_n_generations = 1000;
 const size_t g_population_size = 10;
-const size_t g_individual_n_genes = 2;
+const size_t g_individual_n_genes = 100;
 const size_t g_n_parents = 3;
+const double g_p_mutation = 0.05;
 
 
 struct MyIndividual : varga::Individual<std::vector<double>>
@@ -45,8 +46,8 @@ struct MyIndividual : varga::Individual<std::vector<double>>
     }
 
     void single_point_crossover(const std::function<double(void)> &rnd01,
-                                Individual<std::vector<double>>& parent_a,
-                                Individual<std::vector<double>>& parent_b)
+                                Individual<std::vector<double>> &parent_a,
+                                Individual<std::vector<double>> &parent_b)
     {
         assert(genes.size() != 0);
         assert(parent_a.genes.size() != 0);
@@ -63,28 +64,21 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         }
     }
 
-    virtual void random_mutation(void)
+    void random_mutation(const std::function<double(void)> &rnd01)
     {
-        std::cout << "error: method not implemented" << std::endl;
+        assert(genes.size() != 0);
+        size_t mutation_i = rnd01() * genes.size();
+        genes[mutation_i] = rnd01();
     }
 };
 
 
-// TODO
-// - Parent selection = steady state selection
-//     - num_parents_mating = 3
-//     - population = 10
-// - Crossover = single point
-//     - for every child
-//     - select random crossover point
-//     - select random 2 parents from set
-//     - crossover
-// - Mutation = random
 int main()
 {
     varga::Context<MyIndividual> c{g_population_size};
     c.n_generations = g_n_generations;
     c.n_parents = g_n_parents;
+    c.p_mutation = g_p_mutation;
 
     varga::StateMachine<MyIndividual> sm{c};
     sm.init_functions = {varga::randomize_prev_generation<MyIndividual>};
@@ -94,6 +88,7 @@ int main()
                           varga::create_children_from_single_point_crossover<MyIndividual>,
                           varga::random_mutation<MyIndividual>,
 //                          varga::print_context<MyIndividual>,
+                          varga::print_fitness<MyIndividual>,
                           varga::change_generations<MyIndividual>};
     sm.run();
     return 0;

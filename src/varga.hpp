@@ -96,8 +96,9 @@ namespace varga
             std::cout << "error: method not implemented" << std::endl;
         }
 
-        virtual void random_mutation(void)
+        void random_mutation(const std::function<double(void)> &rnd01)
         {
+            (void) rnd01();
             std::cout << "error: method not implemented" << std::endl;
         }
 
@@ -157,6 +158,7 @@ namespace varga
 
         size_t n_generations = 0;
         size_t n_parents = 0;
+        double p_mutation = 0.0;
 
         size_t i_generation = 0;
         bool stop_state_machine = false;
@@ -216,6 +218,21 @@ namespace varga
                 << "\tindividuals[" << i << "]:" << std::endl
                 << c.next_generation.individuals[i].to_string(2);
         }
+    }
+
+    template <typename TIndividual>
+    void print_fitness(Context<TIndividual>& c)
+    {
+        std::cout << "i_geneation: " << c.i_generation << std::endl;
+        std::cout << "\tfitness: ";
+        for (size_t i = 0; i < c.prev_generation.fitness.size(); i++) {
+            std::cout
+                << c.prev_generation.fitness[i] << ",";
+        }
+        std::cout << std::endl;
+        double best_fitness = *std::max_element(c.prev_generation.fitness.begin(),
+                                               c.prev_generation.fitness.end());
+        std::cout << "\tbest_fitness: " << best_fitness << std::endl;
     }
 
 
@@ -283,6 +300,7 @@ namespace varga
             TIndividual parent = c.prev_generation.individuals[parent_i];
             c.next_generation.individuals.push_back(parent);
         }
+        assert(c.next_generation.individuals.size() == c.n_parents);
     }
 
 
@@ -309,7 +327,11 @@ namespace varga
     template <typename TIndividual>
     void random_mutation(Context<TIndividual>& c)
     {
-        (void) c;
+        for (auto &ind : c.next_generation.individuals) {
+            if (c.random.rnd01() < c.p_mutation) {
+                ind.random_mutation([&c](){return c.random.rnd01();});
+            }
+        }
     }
 }
 
