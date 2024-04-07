@@ -113,6 +113,8 @@ namespace varga
     class Context
     {
         private:
+            size_t priv_i_generation = 0;
+            bool priv_stop_state_machine = false;
             Population<TIndividual> generation_a;
             Population<TIndividual> generation_b;
 
@@ -125,10 +127,10 @@ namespace varga
 
             void switch_generation()
             {
-                i_generation++;
+                priv_i_generation++;
 
                 if (i_generation >= n_generations) {
-                    stop_state_machine = true;
+                    priv_stop_state_machine = true;
                     return;
                 }
 
@@ -152,9 +154,11 @@ namespace varga
         size_t n_generations = 0;
         size_t n_parents_mating = 0;
 
-        // properties
-        size_t i_generation = 0;
-        bool stop_state_machine = false;
+        // state
+        const size_t& i_generation = priv_i_generation;;
+        const bool& stop_state_machine = priv_stop_state_machine;
+
+        // context
         Population<TIndividual>& prev_generation;
         Population<TIndividual>& next_generation;
     };
