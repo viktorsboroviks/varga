@@ -113,7 +113,6 @@ namespace varga
     class Context
     {
         private:
-            size_t i_generation_priv = 0;
             Population<TIndividual> population_storage_a;
             Population<TIndividual> population_storage_b;
 
@@ -124,10 +123,8 @@ namespace varga
                 prev_generation(population_storage_a),
                 next_generation(population_storage_b) {}
 
-            void inc_generation()
+            void swap_generations()
             {
-                i_generation_priv++;
-
                 if (&population_storage_a == &prev_generation) {
                     prev_generation = population_storage_b;
                     next_generation = population_storage_a;
@@ -135,24 +132,17 @@ namespace varga
                     prev_generation = population_storage_a;
                     next_generation = population_storage_b;
                 }
-
-                // cleanup
-                next_generation.parents_idx.resize(0);
-                next_generation.individuals.resize(0);
             }
 
-        // tools
         Random random{};
+        Population<TIndividual>& prev_generation;
+        Population<TIndividual>& next_generation;
 
-        // config
         size_t n_generations = 0;
         size_t n_parents_mating = 0;
 
-        // properties
-        const size_t& i_generation = i_generation_priv;
-        bool stop_state_machine = stop_state_machine;
-        Population<TIndividual>& prev_generation;
-        Population<TIndividual>& next_generation;
+        size_t i_generation = 0;
+        bool stop_state_machine = false;
     };
 
 
@@ -183,27 +173,6 @@ namespace varga
 
 
     template <typename TIndividual>
-    void randomize_prev_generation(Context<TIndividual>& c)
-    {
-        assert (c.i_generation == 0);
-
-        for (auto &i : c.prev_generation.individuals) {
-            i.randomize([&c](){return c.random.rnd01();});
-        }
-    }
-
-
-    template <typename TIndividual>
-    void evaluate(Context<TIndividual>& c)
-    {
-        // calculate fitness
-        for (size_t i = 0; i < c.prev_generation.individuals.size(); i++) {
-            c.prev_generation.fitness[i] = \
-                c.prev_generation.individuals[i].get_fitness();
-        }
-    }
-
-    template <typename TIndividual>
     void print_context(Context<TIndividual>& c)
     {
         std::cout << "i_geneation: " << c.i_generation << std::endl;
@@ -215,14 +184,45 @@ namespace varga
         }
     }
 
+
     template <typename TIndividual>
-    void inc_generation(Context<TIndividual>& c)
+    void randomize_prev_generation(Context<TIndividual>& c)
     {
-        c.inc_generation();
+        assert (c.i_generation == 0);
+
+        for (auto &i : c.prev_generation.individuals) {
+            i.randomize([&c](){return c.random.rnd01();});
+        }
+    }
+
+
+    template <typename TIndividual>
+    void evaluate_prev_generation(Context<TIndividual>& c)
+    {
+        assert(c.prev_generation.individuals.size() != 0);
+
+        // calculate fitness
+        for (size_t i = 0; i < c.prev_generation.individuals.size(); i++) {
+            c.prev_generation.fitness[i] = \
+                c.prev_generation.individuals[i].get_fitness();
+        }
+    }
+
+
+    template <typename TIndividual>
+    void change_generations(Context<TIndividual>& c)
+    {
+        c.i_generation++;
         if (c.i_generation >= c.n_generations) {
-                    c.stop_state_machine = true;
-                    return;
-                }
+            c.stop_state_machine = true;
+            return;
+        }
+
+        c.swap_generations();
+
+        // clean the space for the next generation
+        c.next_generation.parents_idx.resize(0);
+        c.next_generation.individuals.resize(0);
     }
 
     template <typename TIndividual>
