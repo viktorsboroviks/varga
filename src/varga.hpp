@@ -271,7 +271,7 @@ namespace varga
 
 
     template <typename TIndividual>
-    void add_children_from_single_point_crossover(Context<TIndividual>& c)
+    void create_children_from_single_point_crossover(Context<TIndividual>& c)
     {
         (void) c;
     }

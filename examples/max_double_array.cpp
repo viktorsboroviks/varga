@@ -67,7 +67,7 @@ int main()
     sm.state_functions = {varga::evaluate_prev_generation<MyIndividual>,
                           varga::select_parents_as_most_fit<MyIndividual>,
                           varga::move_parents_to_next_generation<MyIndividual>,
-                          varga::add_children_from_single_point_crossover<MyIndividual>,
+                          varga::create_children_from_single_point_crossover<MyIndividual>,
                           varga::random_mutation<MyIndividual>,
 //                          varga::print_context<MyIndividual>,
                           varga::change_generations<MyIndividual>};
