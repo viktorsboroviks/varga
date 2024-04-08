@@ -2,11 +2,11 @@
 #include <sstream>
 #include "varga.hpp"
 
-const size_t g_n_generations = 100000;
+const size_t g_n_generations = 1000000;
 const size_t g_population_size = 10;
 const size_t g_individual_n_genes = 100;
 const size_t g_n_parents = 3;
-const double g_p_mutation = 0.03;
+const double g_p_mutation = 0.05;
 
 
 struct MyIndividual : varga::Individual<std::vector<double>>
@@ -78,8 +78,7 @@ struct MyIndividual : varga::Individual<std::vector<double>>
 
 int main()
 {
-    varga::Context<MyIndividual> c{g_population_size};
-    c.n_generations = g_n_generations;
+    varga::Context<MyIndividual> c{g_population_size, g_n_generations};
     c.n_parents = g_n_parents;
     c.p_mutation = g_p_mutation;
 
@@ -92,6 +91,7 @@ int main()
                           varga::random_mutation<MyIndividual>,
 //                          varga::print_fitness<MyIndividual>,
 //                          varga::print_context<MyIndividual>,
+                          varga::print_progress<MyIndividual>,
                           varga::change_generations<MyIndividual>};
     sm.run();
     return 0;

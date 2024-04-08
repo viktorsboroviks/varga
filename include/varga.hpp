@@ -5,6 +5,9 @@
 #include <mutex>
 #include <functional>
 #include <cassert>
+#include <ostream>
+#include <iostream>
+#include <iomanip>
 
 
 namespace varga
@@ -47,6 +50,83 @@ namespace varga
             }
     };
 
+    class Progress
+    {
+        public:
+            Progress(size_t in_n_max) : n_max(in_n_max)
+            {
+                // disable blinking cursor
+                os << "\033[?25l" << std::flush;
+            }
+
+            ~Progress()
+            {
+                // enable blinking cursor
+                os << "\033[?25h" << std::flush;
+            }
+
+            void update()
+            {
+                update("");
+            }
+
+            void update(std::string text)
+            {
+                assert(n <= n_max);
+                // to not overload the console - update only at update_period
+                // or once per every progress bar step
+                size_t n_per_c;
+                if (update_period) {
+                    n_per_c = update_period;
+                } else {
+                    n_per_c = n_max/bar_len;
+                }
+                if (n % n_per_c != 0) {
+                    n++;
+                    return;
+                }
+
+                os << c_opening_bracket;
+                size_t n_fill = (double)n/n_max * bar_len;
+                for (size_t i = 0; i < bar_len; i++) {
+                    if (i < n_fill) {
+                        os << c_fill;
+                    } else {
+                        os << c_no_fill;
+                    }
+                }
+                os << c_closing_bracket;
+                os << " " << std::fixed << std::setprecision(1) << (double)n/n_max * 100 << "%";
+                os << " (" << std::scientific << std::setprecision(1) << iter_s(n_per_c) << " iter/s)";
+                if (text != "") {
+                    os << ", " << text;
+                }
+                os << "\r" << std::flush;
+                n++;
+            }
+
+            double iter_s(size_t n_iter)
+            {
+                assert(n_iter > 0);
+                std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
+                double duration = std::chrono::duration_cast<std::chrono::milliseconds>(now-last_time).count();
+                last_time = now;
+                return n_iter / (duration/1000);
+            }
+
+            std::ostream& os = std::cerr;
+            char c_opening_bracket = '[';
+            char c_closing_bracket = ']';
+            char c_fill = '.';
+            char c_no_fill = ' ';
+            size_t bar_len = 40;
+            size_t n_max;
+            size_t n = 0;
+            size_t update_period = 0;
+
+        private:
+            std::chrono::time_point<std::chrono::steady_clock> last_time = std::chrono::steady_clock::now();
+    };
 
     // base classes:
     // - Individual
@@ -114,9 +194,16 @@ namespace varga
             fitness(in_size),
             sorted_idx(in_size),
             parents_idx(0) {}
+        
+        void update_best_fitness()
+        {
+            best_fitness = *std::max_element(fitness.begin(),
+                                             fitness.end());
+        }
 
         std::vector<TIndividual> individuals;
         std::vector<double> fitness;
+        double best_fitness = 0;
         std::vector<size_t> sorted_idx;
         std::vector<size_t> parents_idx;
     };
@@ -130,11 +217,13 @@ namespace varga
             Population<TIndividual> population_storage_b;
 
         public:
-            Context(size_t in_population_size) :
+            Context(size_t in_population_size, size_t in_n_generations) :
                 population_storage_a(in_population_size),
                 population_storage_b(in_population_size),
+                progress(in_n_generations),
                 prev_generation(population_storage_a),
-                next_generation(population_storage_b)
+                next_generation(population_storage_b),
+                n_generations(in_n_generations)
             {
                 // clean the space for the next generation
                 next_generation.parents_idx.resize(0);
@@ -153,10 +242,11 @@ namespace varga
             }
 
         Random random{};
+        Progress progress;
         Population<TIndividual>& prev_generation;
         Population<TIndividual>& next_generation;
 
-        size_t n_generations = 0;
+        size_t n_generations;
         size_t n_parents = 0;
         double p_mutation = 0.0;
 
@@ -190,6 +280,8 @@ namespace varga
             std::vector<state_function_t> state_functions{};
     };
 
+    // state machine states
+    // functions ot type StateMachinte::state_function_t
 
     template <typename TIndividual>
     void change_generations(Context<TIndividual>& c)
@@ -249,11 +341,16 @@ namespace varga
             std::cout
                 << "\t\t\t[" << i << "]:" << c.prev_generation.fitness[i] << std::endl;
         }
-        double best_fitness = *std::max_element(c.prev_generation.fitness.begin(),
-                                               c.prev_generation.fitness.end());
-        std::cout << "\t\tbest_fitness: " << best_fitness << std::endl;
+        std::cout << "\t\tbest_fitness: " << c.prev_generation.best_fitness << std::endl;
     }
 
+    template <typename TIndividual>
+    void print_progress(Context<TIndividual>& c)
+    {
+        std::stringstream ss;
+        ss << "best fitness: " << c.prev_generation.best_fitness;
+        c.progress.update(std::string(ss.str()));
+    }
 
     template <typename TIndividual>
     void randomize_prev_generation(Context<TIndividual>& c)
@@ -276,6 +373,8 @@ namespace varga
             c.prev_generation.fitness[i] = \
                 c.prev_generation.individuals[i].get_fitness();
         }
+
+        c.prev_generation.update_best_fitness();
     }
 
 
@@ -326,6 +425,7 @@ namespace varga
     template <typename TIndividual>
     void create_children_from_single_point_crossover(Context<TIndividual>& c)
     {
+        assert(c.n_parents >= 2);
         assert(c.next_generation.parents_idx.size() == c.n_parents);
         assert(c.next_generation.individuals.size() == c.n_parents);
         const size_t population_size = c.prev_generation.individuals.size();
@@ -357,4 +457,3 @@ namespace varga
         }
     }
 }
-

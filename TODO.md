@@ -1,7 +1,7 @@
 # TODO
 
-- try "#pragma omp parallel for"
 - add multi-threading
+  - try "#pragma omp parallel for"
 - add style guide
   - something standard and simple
   - best - with autoformatting
