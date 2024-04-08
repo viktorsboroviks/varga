@@ -2,11 +2,11 @@
 #include <sstream>
 #include "varga.hpp"
 
-const size_t g_n_generations = 1000;
+const size_t g_n_generations = 100000;
 const size_t g_population_size = 10;
 const size_t g_individual_n_genes = 100;
 const size_t g_n_parents = 3;
-const double g_p_mutation = 0.05;
+const double g_p_mutation = 0.03;
 
 
 struct MyIndividual : varga::Individual<std::vector<double>>
@@ -18,13 +18,16 @@ struct MyIndividual : varga::Individual<std::vector<double>>
     std::string to_string(size_t n_tabs = 0)
     {
         std::stringstream ss;
+        for (size_t n = 0; n < n_tabs; n++) {
+            ss << "\t";
+        }
+        ss << "genes:" << std::endl;
         for (size_t i = 0; i < genes.size(); i++) {
             for (size_t n = 0; n < n_tabs; n++) {
                 ss << "\t";
             }
             ss
-                << "genes[" << i << "]:"
-                << genes[i] << std::endl;
+                << "\t[" << i << "]:" << genes[i] << std::endl;
         }
         return ss.str();
     }
@@ -87,8 +90,8 @@ int main()
                           varga::move_parents_to_next_generation<MyIndividual>,
                           varga::create_children_from_single_point_crossover<MyIndividual>,
                           varga::random_mutation<MyIndividual>,
+//                          varga::print_fitness<MyIndividual>,
 //                          varga::print_context<MyIndividual>,
-                          varga::print_fitness<MyIndividual>,
                           varga::change_generations<MyIndividual>};
     sm.run();
     return 0;

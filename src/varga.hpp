@@ -212,11 +212,30 @@ namespace varga
     void print_context(Context<TIndividual>& c)
     {
         std::cout << "i_geneation: " << c.i_generation << std::endl;
+        std::cout << "prev_generation: " << std::endl;
+        for (size_t i = 0; i < c.prev_generation.individuals.size(); i++) {
+            std::cout
+                << "\t[" << i << "]:" << std::endl
+                << "\t\tindividuals:" << std::endl
+                << c.prev_generation.individuals[i].to_string(3)
+                << "\t\tfitness: " << c.prev_generation.fitness[i] << std::endl;
+        }
+        std::cout << "\tsorted_idx:" << std::endl;
+        for (size_t i = 0; i < c.prev_generation.sorted_idx.size(); i++) {
+            std::cout
+                << "\t\t[" << i << "]:" << c.prev_generation.sorted_idx[i] << std::endl;
+        }
         std::cout << "next_generation: " << std::endl;
         for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
             std::cout
-                << "\tindividuals[" << i << "]:" << std::endl
-                << c.next_generation.individuals[i].to_string(2);
+                << "\t[" << i << "]:" << std::endl
+                << "\t\tindividuals:" << std::endl
+                << c.next_generation.individuals[i].to_string(3);
+        }
+        std::cout << "\tparents_idx:" << std::endl;
+        for (size_t i = 0; i < c.next_generation.parents_idx.size(); i++) {
+            std::cout
+                << "\t\t[" << i << "]:" << c.next_generation.parents_idx[i] << std::endl;
         }
     }
 
@@ -224,15 +243,15 @@ namespace varga
     void print_fitness(Context<TIndividual>& c)
     {
         std::cout << "i_geneation: " << c.i_generation << std::endl;
-        std::cout << "\tfitness: ";
+        std::cout << "\tprev_generation:" << std::endl;
+        std::cout << "\t\tfitness:" << std::endl;
         for (size_t i = 0; i < c.prev_generation.fitness.size(); i++) {
             std::cout
-                << c.prev_generation.fitness[i] << ",";
+                << "\t\t\t[" << i << "]:" << c.prev_generation.fitness[i] << std::endl;
         }
-        std::cout << std::endl;
         double best_fitness = *std::max_element(c.prev_generation.fitness.begin(),
                                                c.prev_generation.fitness.end());
-        std::cout << "\tbest_fitness: " << best_fitness << std::endl;
+        std::cout << "\t\tbest_fitness: " << best_fitness << std::endl;
     }
 
 
@@ -278,7 +297,7 @@ namespace varga
             c.prev_generation.sorted_idx.end(),
             [&c](size_t a, size_t b)->bool
             {
-                return c.prev_generation.fitness[a] < c.prev_generation.fitness[b];
+                return c.prev_generation.fitness[a] > c.prev_generation.fitness[b];
             });
 
         // select parents
@@ -312,12 +331,16 @@ namespace varga
         const size_t population_size = c.prev_generation.individuals.size();
         for (size_t i = c.n_parents; i < population_size; i++) {
             size_t parent_a_i = c.n_parents * c.random.rnd01();
-            size_t parent_b_i = c.n_parents * c.random.rnd01();
+            size_t parent_b_i;
+            do {
+                parent_b_i = c.n_parents * c.random.rnd01();
+            } while (parent_b_i == parent_a_i);
             TIndividual& parent_a = c.next_generation.individuals[parent_a_i];
             TIndividual& parent_b = c.next_generation.individuals[parent_b_i];
             TIndividual child{};
             child.single_point_crossover([&c](){return c.random.rnd01();},
-                                         parent_a, parent_b);
+                                         parent_a,
+                                         parent_b);
             c.next_generation.individuals.push_back(child);
         }
         assert(c.next_generation.individuals.size() == c.prev_generation.individuals.size());
