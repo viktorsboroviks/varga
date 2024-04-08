@@ -1,9 +1,9 @@
 # TODO
 
-- add initial version
+- try "#pragma omp parallel for"
+- add multi-threading
 - add style guide
   - something standard and simple
   - best - with autoformatting
-  - clang-format?
-  - add to Makefile
-- add example
+    - clang-format?
+    - add to Makefile
