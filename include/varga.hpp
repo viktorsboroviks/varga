@@ -157,7 +157,7 @@ namespace varga
         // virtual destructor is required if virtual methods are used
         virtual ~Individual() {}
 
-        virtual std::string to_string(size_t n_tabs = 0)
+        virtual std::string str(size_t n_tabs = 0)
         {
             (void) n_tabs;
             std::cout << "error: method not implemented" << std::endl;
@@ -319,7 +319,7 @@ namespace varga
             std::cout
                 << "\t[" << i << "]:" << std::endl
                 << "\t\tindividuals:" << std::endl
-                << c.prev_generation.individuals[i].to_string(3)
+                << c.prev_generation.individuals[i].str(3)
                 << "\t\tfitness: " << c.prev_generation.fitness[i] << std::endl;
         }
         std::cout << "\tsorted_idx:" << std::endl;
@@ -332,7 +332,7 @@ namespace varga
             std::cout
                 << "\t[" << i << "]:" << std::endl
                 << "\t\tindividuals:" << std::endl
-                << c.next_generation.individuals[i].to_string(3);
+                << c.next_generation.individuals[i].str(3);
         }
         std::cout << "\tparents_idx:" << std::endl;
         for (size_t i = 0; i < c.next_generation.parents_idx.size(); i++) {

@@ -15,7 +15,7 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         genes.resize(g_individual_n_genes);
     }
 
-    std::string to_string(size_t n_tabs = 0)
+    std::string str(size_t n_tabs = 0)
     {
         std::stringstream ss;
         for (size_t n = 0; n < n_tabs; n++) {
