@@ -129,7 +129,7 @@ namespace varga
             char c_closing_bracket = ']';
             char c_fill = '.';
             char c_no_fill = ' ';
-            size_t bar_len = 40;
+            size_t bar_len = 20;
             size_t n_max;
             size_t n = 0;
             size_t update_period = 0;
