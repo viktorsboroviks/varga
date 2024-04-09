@@ -121,7 +121,7 @@ namespace varga
                 for (size_t i = 0; i < n_chars; i++) {
                     os << " ";
                 }
-                os << "\r";
+                os << "\r" << std::flush;
             }
 
             std::ostream& os = std::cerr;
@@ -129,7 +129,7 @@ namespace varga
             char c_closing_bracket = ']';
             char c_fill = '.';
             char c_no_fill = ' ';
-            size_t bar_len = 40;
+            size_t bar_len = 20;
             size_t n_max;
             size_t n = 0;
             size_t update_period = 0;
@@ -157,7 +157,7 @@ namespace varga
         // virtual destructor is required if virtual methods are used
         virtual ~Individual() {}
 
-        virtual std::string to_string(size_t n_tabs = 0)
+        virtual std::string str(size_t n_tabs = 0)
         {
             (void) n_tabs;
             std::cout << "error: method not implemented" << std::endl;
@@ -284,10 +284,15 @@ namespace varga
                         f(*p_context);
                     }
                 }
+                p_context->progress.os_clean();
+                for (state_function_t &f : closure_functions) {
+                    f(*p_context);
+                }
             }
 
-            std::vector<state_function_t> init_functions{};
-            std::vector<state_function_t> state_functions{};
+            std::vector<state_function_t> init_functions{0};
+            std::vector<state_function_t> state_functions{0};
+            std::vector<state_function_t> closure_functions{0};
     };
 
     // state machine states
@@ -319,7 +324,7 @@ namespace varga
             std::cout
                 << "\t[" << i << "]:" << std::endl
                 << "\t\tindividuals:" << std::endl
-                << c.prev_generation.individuals[i].to_string(3)
+                << c.prev_generation.individuals[i].str(3)
                 << "\t\tfitness: " << c.prev_generation.fitness[i] << std::endl;
         }
         std::cout << "\tsorted_idx:" << std::endl;
@@ -332,7 +337,7 @@ namespace varga
             std::cout
                 << "\t[" << i << "]:" << std::endl
                 << "\t\tindividuals:" << std::endl
-                << c.next_generation.individuals[i].to_string(3);
+                << c.next_generation.individuals[i].str(3);
         }
         std::cout << "\tparents_idx:" << std::endl;
         for (size_t i = 0; i < c.next_generation.parents_idx.size(); i++) {
@@ -361,6 +366,18 @@ namespace varga
         ss << "best fitness: " << c.prev_generation.best_fitness;
         c.progress.update(std::string(ss.str()));
     }
+
+
+    template <typename TIndividual>
+    void print_result(Context<TIndividual>& c)
+    {
+        std::stringstream ss;
+        std::cout << "best fitness: " << c.prev_generation.best_fitness << std::endl;
+        size_t best_idx = c.prev_generation.sorted_idx[0];
+        std::cout << "best result:" << std::endl;
+        std::cout << c.prev_generation.individuals[best_idx].str(1) << std::endl;
+    }
+
 
     template <typename TIndividual>
     void randomize_prev_generation(Context<TIndividual>& c)
