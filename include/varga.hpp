@@ -62,6 +62,7 @@ namespace varga
             ~Progress()
             {
                 // enable blinking cursor
+                os_clean();
                 os << "\033[?25h" << std::flush;
             }
 
@@ -112,6 +113,15 @@ namespace varga
                 double duration = std::chrono::duration_cast<std::chrono::milliseconds>(now-last_time).count();
                 last_time = now;
                 return n_iter / (duration/1000);
+            }
+
+            void os_clean(size_t n_chars = 100)
+            {
+                // overwrite command line with n_chars ' '
+                for (size_t i = 0; i < n_chars; i++) {
+                    os << " ";
+                }
+                os << "\r";
             }
 
             std::ostream& os = std::cerr;
