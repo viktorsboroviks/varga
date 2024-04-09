@@ -121,7 +121,7 @@ namespace varga
                 for (size_t i = 0; i < n_chars; i++) {
                     os << " ";
                 }
-                os << "\r";
+                os << "\r" << std::flush;
             }
 
             std::ostream& os = std::cerr;
@@ -284,10 +284,15 @@ namespace varga
                         f(*p_context);
                     }
                 }
+                p_context->progress.os_clean();
+                for (state_function_t &f : closure_functions) {
+                    f(*p_context);
+                }
             }
 
-            std::vector<state_function_t> init_functions{};
-            std::vector<state_function_t> state_functions{};
+            std::vector<state_function_t> init_functions{0};
+            std::vector<state_function_t> state_functions{0};
+            std::vector<state_function_t> closure_functions{0};
     };
 
     // state machine states
@@ -361,6 +366,18 @@ namespace varga
         ss << "best fitness: " << c.prev_generation.best_fitness;
         c.progress.update(std::string(ss.str()));
     }
+
+
+    template <typename TIndividual>
+    void print_result(Context<TIndividual>& c)
+    {
+        std::stringstream ss;
+        std::cout << "best fitness: " << c.prev_generation.best_fitness << std::endl;
+        size_t best_idx = c.prev_generation.sorted_idx[0];
+        std::cout << "best result:" << std::endl;
+        std::cout << c.prev_generation.individuals[best_idx].str(1) << std::endl;
+    }
+
 
     template <typename TIndividual>
     void randomize_prev_generation(Context<TIndividual>& c)

@@ -26,8 +26,10 @@ struct MyIndividual : varga::Individual<std::vector<double>>
             for (size_t n = 0; n < n_tabs; n++) {
                 ss << "\t";
             }
-            ss
-                << "\t[" << i << "]:" << genes[i] << std::endl;
+            ss << "\t[" << i << "]:" << genes[i];
+            if ((i + 1) != genes.size()) {
+                ss << std::endl;
+            }
         }
         return ss.str();
     }
@@ -93,6 +95,7 @@ int main()
 //                          varga::print_context<MyIndividual>,
                           varga::print_progress<MyIndividual>,
                           varga::change_generations<MyIndividual>};
+    sm.closure_functions = {varga::print_result<MyIndividual>};
     sm.run();
     return 0;
 }
