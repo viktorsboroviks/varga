@@ -202,6 +202,7 @@ namespace varga
         Population(size_t in_size) :
             individuals(in_size),
             fitness(in_size),
+            best_fitness(0),
             sorted_idx(in_size),
             parents_idx(0) {}
         
@@ -213,7 +214,7 @@ namespace varga
 
         std::vector<TIndividual> individuals;
         std::vector<double> fitness;
-        double best_fitness = 0;
+        double best_fitness;
         std::vector<size_t> sorted_idx;
         std::vector<size_t> parents_idx;
     };
@@ -233,7 +234,11 @@ namespace varga
                 progress(in_n_generations),
                 prev_generation(population_storage_a),
                 next_generation(population_storage_b),
-                n_generations(in_n_generations)
+                n_generations(in_n_generations),
+                n_parents(0),
+                p_mutation(0.0),
+                i_generation(0),
+                stop_state_machine(false)
             {
                 // clean the space for the next generation
                 next_generation.parents_idx.resize(0);
@@ -257,11 +262,11 @@ namespace varga
         Population<TIndividual>& next_generation;
 
         size_t n_generations;
-        size_t n_parents = 0;
-        double p_mutation = 0.0;
+        size_t n_parents;
+        double p_mutation;
 
-        size_t i_generation = 0;
-        bool stop_state_machine = false;
+        size_t i_generation;
+        bool stop_state_machine;
     };
 
 
@@ -272,16 +277,22 @@ namespace varga
             Context<TIndividual> *p_context;
 
         public:
-            StateMachine(Context<TIndividual>& in_context) : p_context(&in_context) {}
+            StateMachine(Context<TIndividual>& in_context) :
+                p_context(&in_context),
+                init_functions(0),
+                state_functions(0),
+                closure_functions(0) {}
 
             void run()
             {
                 for (state_function_t &f : init_functions) {
                     f(*p_context);
                 }
-                while (!p_context->stop_state_machine) {
-                    for (state_function_t &f : state_functions) {
-                        f(*p_context);
+                if (state_functions.size() > 0) {
+                    while (!p_context->stop_state_machine) {
+                        for (state_function_t &f : state_functions) {
+                            f(*p_context);
+                        }
                     }
                 }
                 p_context->progress.os_clean();
@@ -290,9 +301,9 @@ namespace varga
                 }
             }
 
-            std::vector<state_function_t> init_functions{0};
-            std::vector<state_function_t> state_functions{0};
-            std::vector<state_function_t> closure_functions{0};
+            std::vector<state_function_t> init_functions;
+            std::vector<state_function_t> state_functions;
+            std::vector<state_function_t> closure_functions;
     };
 
     // state machine states
