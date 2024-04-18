@@ -53,17 +53,11 @@ namespace varga
     class Progress
     {
         public:
-            Progress(size_t in_n_max) : n_max(in_n_max)
-            {
-                // disable blinking cursor
-                os << "\033[?25l" << std::flush;
-            }
+            Progress(size_t in_n_max) : n_max(in_n_max) {}
 
             ~Progress()
             {
-                // enable blinking cursor
                 os_clean();
-                os << "\033[?25h" << std::flush;
             }
 
             void update()
@@ -87,22 +81,27 @@ namespace varga
                     return;
                 }
 
-                os << c_opening_bracket;
+                // generate a string first and then writhe the whole string to `os`
+                // to prevent blinking cursor from jumping all over the place
+                std::stringstream ss;
+
+                ss << c_opening_bracket;
                 size_t n_fill = (double)n/n_max * bar_len;
                 for (size_t i = 0; i < bar_len; i++) {
                     if (i < n_fill) {
-                        os << c_fill;
+                        ss << c_fill;
                     } else {
-                        os << c_no_fill;
+                        ss << c_no_fill;
                     }
                 }
-                os << c_closing_bracket;
-                os << " " << std::fixed << std::setprecision(1) << (double)n/n_max * 100 << "%";
-                os << " (" << std::scientific << std::setprecision(1) << iter_s(n_per_c) << " iter/s)";
+                ss << c_closing_bracket;
+                ss << " " << std::fixed << std::setprecision(1) << (double)n/n_max * 100 << "%";
+                ss << " (" << std::scientific << std::setprecision(1) << iter_s(n_per_c) << " iter/s)";
                 if (text != "") {
-                    os << ", " << text;
+                    ss << ", " << text;
                 }
-                os << "\r" << std::flush;
+                ss << "\r";
+                os << ss.str();
                 n++;
             }
 
