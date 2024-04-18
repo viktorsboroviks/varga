@@ -383,10 +383,10 @@ namespace varga
     void print_result(Context<TIndividual>& c)
     {
         std::stringstream ss;
-        std::cout << "best fitness: " << c.prev_generation.best_fitness << std::endl;
         size_t best_idx = c.prev_generation.sorted_idx[0];
         std::cout << "best result:" << std::endl;
         std::cout << c.prev_generation.individuals[best_idx].str(1) << std::endl;
+        std::cout << "best fitness: " << c.prev_generation.best_fitness << std::endl;
     }
 
 
