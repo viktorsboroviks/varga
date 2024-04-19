@@ -113,6 +113,11 @@ namespace varga
                 if (text != "") {
                     ss << ", " << text;
                 }
+                // overwrite remalining command line with ' '
+                const size_t n_chars = 10;
+                for (size_t i = 0; i < n_chars; i++) {
+                    ss << " ";
+                }
                 ss << "\r";
                 os << ss.str();
                 n++;
