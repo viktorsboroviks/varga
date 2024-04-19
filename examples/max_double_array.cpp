@@ -50,9 +50,9 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         return fitness;
     }
 
-    void single_point_crossover(const std::function<double(void)> &rnd01,
-                                Individual<std::vector<double>> &parent_a,
-                                Individual<std::vector<double>> &parent_b)
+    void crossover(const std::function<double(void)> &rnd01,
+                   Individual<std::vector<double>> &parent_a,
+                   Individual<std::vector<double>> &parent_b)
     {
         assert(genes.size() != 0);
         assert(parent_a.genes.size() != 0);
@@ -89,7 +89,7 @@ int main()
     sm.state_functions = {varga::evaluate_prev_generation<MyIndividual>,
                           varga::select_parents_as_most_fit<MyIndividual>,
                           varga::move_parents_to_next_generation<MyIndividual>,
-                          varga::create_children_from_single_point_crossover<MyIndividual>,
+                          varga::create_children_from_crossover<MyIndividual>,
                           varga::random_mutation<MyIndividual>,
 //                          varga::print_fitness<MyIndividual>,
 //                          varga::print_context<MyIndividual>,

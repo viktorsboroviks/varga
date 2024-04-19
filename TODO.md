@@ -1,9 +1,16 @@
 # TODO
 
-- consider passing context to population and individual
-  - make population a factory for individuals, setting all necessary parameters
 - consider if we need to break from state machine earlier,
   since last generation is discarded
+- print stats to file/console
+  - runtime (add to _result?)
+- print fitness as .csv
+- print genes as .csv
+  - new state function, expecting Individual method
+  - filter / period to be able to print periodically
+
+- consider passing context to population and individual
+  - make population a factory for individuals, setting all necessary parameters
 - add more stats to print_result
   - runtime
   - generations

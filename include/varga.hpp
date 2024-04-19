@@ -175,9 +175,9 @@ namespace varga
             return -1.0;
         }
 
-        virtual void single_point_crossover(const std::function<double(void)> &rnd01,
-                                            Individual<TGenes>& parent_a,
-                                            Individual<TGenes>& parent_b)
+        virtual void crossover(const std::function<double(void)> &rnd01,
+                               Individual<TGenes>& parent_a,
+                               Individual<TGenes>& parent_b)
         {
             (void) rnd01();
             (void) parent_a;
@@ -235,6 +235,7 @@ namespace varga
                 next_generation(population_storage_b),
                 n_generations(in_n_generations),
                 n_parents(0),
+                keep_n_parents(0),
                 p_mutation(0.0),
                 i_generation(0),
                 stop_state_machine(false)
@@ -262,6 +263,7 @@ namespace varga
 
         size_t n_generations;
         size_t n_parents;
+        size_t keep_n_parents;
         double p_mutation;
 
         size_t i_generation;
@@ -448,36 +450,36 @@ namespace varga
     template <typename TIndividual>
     void move_parents_to_next_generation(Context<TIndividual>& c)
     {
-        assert(c.next_generation.parents_idx.size() == c.n_parents);
+        assert(c.next_generation.parents_idx.size() >= c.keep_n_parents);
         assert(c.next_generation.individuals.size() == 0);
-        for (size_t i = 0; i < c.n_parents; i++) {
+        for (size_t i = 0; i < c.keep_n_parents; i++) {
             size_t parent_i = c.next_generation.parents_idx[i];
             TIndividual parent = c.prev_generation.individuals[parent_i];
             c.next_generation.individuals.push_back(parent);
         }
-        assert(c.next_generation.individuals.size() == c.n_parents);
+        assert(c.next_generation.individuals.size() == c.keep_n_parents);
     }
 
 
     template <typename TIndividual>
-    void create_children_from_single_point_crossover(Context<TIndividual>& c)
+    void create_children_from_crossover(Context<TIndividual>& c)
     {
         assert(c.n_parents >= 2);
         assert(c.next_generation.parents_idx.size() == c.n_parents);
-        assert(c.next_generation.individuals.size() == c.n_parents);
+        assert(c.next_generation.individuals.size() == c.keep_n_parents);
         const size_t population_size = c.prev_generation.individuals.size();
-        for (size_t i = c.n_parents; i < population_size; i++) {
+        for (size_t i = c.keep_n_parents; i < population_size; i++) {
             size_t parent_a_i = c.n_parents * c.random.rnd01();
             size_t parent_b_i;
             do {
                 parent_b_i = c.n_parents * c.random.rnd01();
             } while (parent_b_i == parent_a_i);
-            TIndividual& parent_a = c.next_generation.individuals[parent_a_i];
-            TIndividual& parent_b = c.next_generation.individuals[parent_b_i];
+            TIndividual& parent_a = c.prev_generation.individuals[c.next_generation.parents_idx[parent_a_i]];
+            TIndividual& parent_b = c.prev_generation.individuals[c.next_generation.parents_idx[parent_b_i]];
             TIndividual child{};
-            child.single_point_crossover([&c](){return c.random.rnd01();},
-                                         parent_a,
-                                         parent_b);
+            child.crossover([&c](){return c.random.rnd01();},
+                            parent_a,
+                            parent_b);
             c.next_generation.individuals.push_back(child);
         }
         assert(c.next_generation.individuals.size() == c.prev_generation.individuals.size());
