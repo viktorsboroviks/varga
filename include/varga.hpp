@@ -52,7 +52,20 @@ namespace varga
 
     class Progress
     {
+        private:
+            std::chrono::time_point<std::chrono::steady_clock> last_time = std::chrono::steady_clock::now();
+
         public:
+            std::ostream& os = std::cerr;
+            char c_opening_bracket = '[';
+            char c_closing_bracket = ']';
+            char c_fill = '.';
+            char c_no_fill = ' ';
+            size_t bar_len = 20;
+            size_t n_max;
+            size_t n = 0;
+            size_t update_period = 0;
+
             Progress(size_t in_n_max) : n_max(in_n_max) {}
 
             ~Progress()
@@ -122,19 +135,6 @@ namespace varga
                 }
                 os << "\r" << std::flush;
             }
-
-            std::ostream& os = std::cerr;
-            char c_opening_bracket = '[';
-            char c_closing_bracket = ']';
-            char c_fill = '.';
-            char c_no_fill = ' ';
-            size_t bar_len = 20;
-            size_t n_max;
-            size_t n = 0;
-            size_t update_period = 0;
-
-        private:
-            std::chrono::time_point<std::chrono::steady_clock> last_time = std::chrono::steady_clock::now();
     };
 
     // base classes:
@@ -153,6 +153,8 @@ namespace varga
     template <typename TGenes>
     struct Individual
     {
+        TGenes genes;
+
         // virtual destructor is required if virtual methods are used
         virtual ~Individual() {}
 
@@ -190,14 +192,18 @@ namespace varga
             (void) rnd01();
             std::cout << "error: method not implemented" << std::endl;
         }
-
-        TGenes genes;
     };
 
 
     template <typename TIndividual>
     struct Population
     {
+        std::vector<TIndividual> individuals;
+        std::vector<double> fitness;
+        double best_fitness;
+        std::vector<size_t> sorted_idx;
+        std::vector<size_t> parents_idx;
+
         Population(size_t in_size) :
             individuals(in_size),
             fitness(in_size),
@@ -210,12 +216,6 @@ namespace varga
             best_fitness = *std::max_element(fitness.begin(),
                                              fitness.end());
         }
-
-        std::vector<TIndividual> individuals;
-        std::vector<double> fitness;
-        double best_fitness;
-        std::vector<size_t> sorted_idx;
-        std::vector<size_t> parents_idx;
     };
 
 
@@ -227,6 +227,19 @@ namespace varga
             Population<TIndividual> population_storage_b;
 
         public:
+            Random random{};
+            Progress progress;
+            Population<TIndividual>& prev_generation;
+            Population<TIndividual>& next_generation;
+
+            size_t n_generations;
+            size_t n_parents;
+            size_t keep_n_parents;
+            double p_mutation;
+
+            size_t i_generation;
+            bool stop_state_machine;
+
             Context(size_t in_population_size, size_t in_n_generations) :
                 population_storage_a(in_population_size),
                 population_storage_b(in_population_size),
@@ -255,19 +268,6 @@ namespace varga
                     next_generation = population_storage_b;
                 }
             }
-
-        Random random{};
-        Progress progress;
-        Population<TIndividual>& prev_generation;
-        Population<TIndividual>& next_generation;
-
-        size_t n_generations;
-        size_t n_parents;
-        size_t keep_n_parents;
-        double p_mutation;
-
-        size_t i_generation;
-        bool stop_state_machine;
     };
 
 
@@ -278,6 +278,10 @@ namespace varga
             Context<TIndividual> *p_context;
 
         public:
+            std::vector<state_function_t> init_functions;
+            std::vector<state_function_t> state_functions;
+            std::vector<state_function_t> closure_functions;
+
             StateMachine(Context<TIndividual>& in_context) :
                 p_context(&in_context),
                 init_functions(0),
@@ -301,10 +305,6 @@ namespace varga
                     f(*p_context);
                 }
             }
-
-            std::vector<state_function_t> init_functions;
-            std::vector<state_function_t> state_functions;
-            std::vector<state_function_t> closure_functions;
     };
 
     // state machine states
