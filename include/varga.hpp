@@ -6,6 +6,7 @@
 #include <functional>
 #include <cassert>
 #include <ostream>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 

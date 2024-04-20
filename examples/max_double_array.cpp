@@ -1,6 +1,5 @@
 #include <string>
 #include <sstream>
-#include <fstream>
 #include "varga.hpp"
 
 const size_t g_n_generations = 1000000;
