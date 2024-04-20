@@ -388,7 +388,7 @@ namespace varga
     {
         std::ofstream f(c.best_fitness_log_filename);
         f.is_open();
-        f << "Generation,Best fitness" << std::endl;
+        f << "i_generation,best_fitness" << std::endl;
         for (size_t g = 0; g < c.n_generations; g++) {
             f << g << "," << c.best_fitness_log[g] << std::endl;
         }
