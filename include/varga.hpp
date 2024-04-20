@@ -203,19 +203,12 @@ namespace varga
     template <typename TIndividual>
     struct Population
     {
-        std::vector<TIndividual> individuals;
-        std::vector<double> fitness;
-        double best_fitness;
-        std::vector<size_t> sorted_idx;
-        std::vector<size_t> parents_idx;
+        std::vector<TIndividual> individuals{};
+        std::vector<double> fitness{};
+        double best_fitness = 0;
+        std::vector<size_t> sorted_idx{};
+        std::vector<size_t> parents_idx{};
 
-        Population(size_t in_size) :
-            individuals(in_size),
-            fitness(in_size),
-            best_fitness(0),
-            sorted_idx(in_size),
-            parents_idx(0) {}
-        
         void update_best_fitness()
         {
             best_fitness = *std::max_element(fitness.begin(),
@@ -228,8 +221,8 @@ namespace varga
     class Context
     {
         private:
-            Population<TIndividual> population_storage_a;
-            Population<TIndividual> population_storage_b;
+            Population<TIndividual> population_storage_a{};
+            Population<TIndividual> population_storage_b{};
 
         public:
             Random random{};
@@ -238,30 +231,23 @@ namespace varga
             Population<TIndividual>& next_generation;
 
             size_t n_generations;
-            size_t n_parents;
-            size_t keep_n_parents;
-            double p_mutation;
+            size_t population_size;
+            size_t n_parents = 0;
+            size_t n_keep_parents = 0;
+            double p_mutation = 0.0;
 
-            size_t i_generation;
-            bool stop_state_machine;
+            size_t i_generation = 0;
+            bool stop_state_machine = false;
+
+            std::vector<double> best_fitness_log;
+            std::string best_fitness_log_filename{"best_fitness_log.csv"};
 
             Context(size_t in_population_size, size_t in_n_generations) :
-                population_storage_a(in_population_size),
-                population_storage_b(in_population_size),
                 progress(in_n_generations),
                 prev_generation(population_storage_a),
                 next_generation(population_storage_b),
                 n_generations(in_n_generations),
-                n_parents(0),
-                keep_n_parents(0),
-                p_mutation(0.0),
-                i_generation(0),
-                stop_state_machine(false)
-            {
-                // clean the space for the next generation
-                next_generation.parents_idx.resize(0);
-                next_generation.individuals.resize(0);
-            }
+                population_size(in_population_size) {}
 
             void swap_generations()
             {
@@ -272,6 +258,12 @@ namespace varga
                     prev_generation = population_storage_a;
                     next_generation = population_storage_b;
                 }
+
+                // clean the space for the next generation
+                next_generation.individuals.resize(0);
+                next_generation.fitness.resize(0);
+                next_generation.sorted_idx.resize(0);
+                next_generation.parents_idx.resize(0);
             }
     };
 
@@ -283,26 +275,24 @@ namespace varga
             Context<TIndividual> *p_context;
 
         public:
-            std::vector<state_function_t> init_functions;
-            std::vector<state_function_t> state_functions;
-            std::vector<state_function_t> closure_functions;
+            std::vector<state_function_t> init_functions{};
+            std::vector<state_function_t> state_functions{};
+            std::vector<state_function_t> closure_functions{};
 
             StateMachine(Context<TIndividual>& in_context) :
-                p_context(&in_context),
-                init_functions(0),
-                state_functions(0),
-                closure_functions(0) {}
+                p_context(&in_context) {}
 
             void run()
             {
                 for (state_function_t &f : init_functions) {
                     f(*p_context);
                 }
-                if (state_functions.size() > 0) {
-                    while (!p_context->stop_state_machine) {
-                        for (state_function_t &f : state_functions) {
-                            f(*p_context);
+                while (!p_context->stop_state_machine) {
+                    for (state_function_t &f : state_functions) {
+                        if (p_context->stop_state_machine) {
+                            break;
                         }
+                        f(*p_context);
                     }
                 }
                 p_context->progress.os_clean();
@@ -325,10 +315,6 @@ namespace varga
         }
 
         c.swap_generations();
-
-        // clean the space for the next generation
-        c.next_generation.parents_idx.resize(0);
-        c.next_generation.individuals.resize(0);
     }
 
 
@@ -336,18 +322,18 @@ namespace varga
     void print_context(Context<TIndividual>& c)
     {
         std::cout << "i_geneation: " << c.i_generation << std::endl;
-        std::cout << "prev_generation: " << std::endl;
-        for (size_t i = 0; i < c.prev_generation.individuals.size(); i++) {
+        std::cout << "next_generation: " << std::endl;
+        for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
             std::cout
                 << "\t[" << i << "]:" << std::endl
                 << "\t\tindividuals:" << std::endl
-                << c.prev_generation.individuals[i].str(3)
-                << "\t\tfitness: " << c.prev_generation.fitness[i] << std::endl;
+                << c.next_generation.individuals[i].str(3)
+                << "\t\tfitness: " << c.next_generation.fitness[i] << std::endl;
         }
         std::cout << "\tsorted_idx:" << std::endl;
-        for (size_t i = 0; i < c.prev_generation.sorted_idx.size(); i++) {
+        for (size_t i = 0; i < c.next_generation.sorted_idx.size(); i++) {
             std::cout
-                << "\t\t[" << i << "]:" << c.prev_generation.sorted_idx[i] << std::endl;
+                << "\t\t[" << i << "]:" << c.next_generation.sorted_idx[i] << std::endl;
         }
         std::cout << "next_generation: " << std::endl;
         for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
@@ -367,20 +353,20 @@ namespace varga
     void print_fitness(Context<TIndividual>& c)
     {
         std::cout << "i_geneation: " << c.i_generation << std::endl;
-        std::cout << "\tprev_generation:" << std::endl;
+        std::cout << "\tnext_generation:" << std::endl;
         std::cout << "\t\tfitness:" << std::endl;
-        for (size_t i = 0; i < c.prev_generation.fitness.size(); i++) {
+        for (size_t i = 0; i < c.next_generation.fitness.size(); i++) {
             std::cout
-                << "\t\t\t[" << i << "]:" << c.prev_generation.fitness[i] << std::endl;
+                << "\t\t\t[" << i << "]:" << c.next_generation.fitness[i] << std::endl;
         }
-        std::cout << "\t\tbest_fitness: " << c.prev_generation.best_fitness << std::endl;
+        std::cout << "\t\tbest_fitness: " << c.next_generation.best_fitness << std::endl;
     }
 
     template <typename TIndividual>
     void print_progress(Context<TIndividual>& c)
     {
         std::stringstream ss;
-        ss << "best fitness: " << c.prev_generation.best_fitness;
+        ss << "best fitness: " << c.next_generation.best_fitness;
         c.progress.update(std::string(ss.str()));
     }
 
@@ -389,61 +375,82 @@ namespace varga
     void print_result(Context<TIndividual>& c)
     {
         std::stringstream ss;
-        size_t best_idx = c.prev_generation.sorted_idx[0];
+        size_t best_idx = c.next_generation.sorted_idx[0];
         std::cout << "best result:" << std::endl;
-        std::cout << c.prev_generation.individuals[best_idx].str(1) << std::endl;
-        std::cout << "best fitness: " << c.prev_generation.best_fitness << std::endl;
+        std::cout << c.next_generation.individuals[best_idx].str(1) << std::endl;
+        std::cout << "best fitness: " << c.next_generation.best_fitness << std::endl;
     }
 
 
     template <typename TIndividual>
-    void randomize_prev_generation(Context<TIndividual>& c)
+    void create_best_fitness_log_csv(Context<TIndividual>& c)
+    {
+        std::ofstream f(c.best_fitness_log_filename);
+        f.is_open();
+        f << "Generation,Best fitness" << std::endl;
+        for (size_t g = 0; g < c.n_generations; g++) {
+            f << g << "," << c.best_fitness_log[g] << std::endl;
+        }
+    }
+
+
+    template <typename TIndividual>
+    void randomize_next_generation(Context<TIndividual>& c)
     {
         assert (c.i_generation == 0);
+        assert (c.next_generation.individuals.size() == 0);
 
-        for (auto &i : c.prev_generation.individuals) {
-            i.randomize([&c](){return c.random.rnd01();});
+        for (size_t i = 0; i < c.population_size; i++) {
+            TIndividual individual;
+            individual.randomize([&c](){return c.random.rnd01();});
+            c.next_generation.individuals.push_back(individual);
         }
     }
 
 
     template <typename TIndividual>
-    void evaluate_prev_generation(Context<TIndividual>& c)
+    void evaluate_next_generation(Context<TIndividual>& c)
     {
-        assert(c.prev_generation.individuals.size() != 0);
+        assert(c.next_generation.individuals.size() == c.population_size);
+        assert(c.next_generation.fitness.size() == 0);
 
         // calculate fitness
-        for (size_t i = 0; i < c.prev_generation.individuals.size(); i++) {
-            c.prev_generation.fitness[i] = \
-                c.prev_generation.individuals[i].get_fitness();
+        for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
+            double fitness = c.next_generation.individuals[i].get_fitness();
+            c.next_generation.fitness.push_back(fitness);
         }
 
-        c.prev_generation.update_best_fitness();
+        c.next_generation.update_best_fitness();
+        c.best_fitness_log.push_back(c.next_generation.best_fitness);
     }
 
 
     template <typename TIndividual>
-    void select_parents_as_most_fit(Context<TIndividual>& c)
+    void sort_next_generation_by_fitness(Context<TIndividual>& c)
     {
         // init .sorted_idx
-        size_t population_size = c.prev_generation.individuals.size();
-        assert(population_size != 0);
-        assert(c.prev_generation.sorted_idx.size() == population_size);
-        assert(c.prev_generation.fitness.size() == population_size);
-        for (size_t i = 0; i < population_size; i++) {
-            c.prev_generation.sorted_idx[i] = i;
+        assert(c.next_generation.individuals.size() == c.population_size);
+        assert(c.next_generation.fitness.size() == c.population_size);
+        assert(c.next_generation.sorted_idx.size() == 0);
+        for (size_t i = 0; i < c.population_size; i++) {
+            c.next_generation.sorted_idx.push_back(i);
         }
-
+        assert(c.next_generation.sorted_idx.size() == c.population_size);
         // fill .sorted_idx
         std::sort(
-            c.prev_generation.sorted_idx.begin(),
-            c.prev_generation.sorted_idx.end(),
+            c.next_generation.sorted_idx.begin(),
+            c.next_generation.sorted_idx.end(),
             [&c](size_t a, size_t b)->bool
             {
-                return c.prev_generation.fitness[a] > c.prev_generation.fitness[b];
+                return c.next_generation.fitness[a] > c.next_generation.fitness[b];
             });
+    }
 
-        // select parents
+
+    template <typename TIndividual>
+    void select_next_generation_parents_as_prev_generation_best(Context<TIndividual>& c)
+    {
+        assert(c.prev_generation.sorted_idx.size() == c.population_size);
         assert(c.next_generation.parents_idx.size() == 0);
         for (size_t i = 0; i < c.n_parents; i++) {
             size_t parent_i = c.prev_generation.sorted_idx[i];
@@ -453,27 +460,26 @@ namespace varga
 
 
     template <typename TIndividual>
-    void move_parents_to_next_generation(Context<TIndividual>& c)
+    void add_next_generation_individuals_from_parents(Context<TIndividual>& c)
     {
-        assert(c.next_generation.parents_idx.size() >= c.keep_n_parents);
+        assert(c.next_generation.parents_idx.size() >= c.n_keep_parents);
         assert(c.next_generation.individuals.size() == 0);
-        for (size_t i = 0; i < c.keep_n_parents; i++) {
+        for (size_t i = 0; i < c.n_keep_parents; i++) {
             size_t parent_i = c.next_generation.parents_idx[i];
             TIndividual parent = c.prev_generation.individuals[parent_i];
             c.next_generation.individuals.push_back(parent);
         }
-        assert(c.next_generation.individuals.size() == c.keep_n_parents);
+        assert(c.next_generation.individuals.size() == c.n_keep_parents);
     }
 
 
     template <typename TIndividual>
-    void create_children_from_crossover(Context<TIndividual>& c)
+    void add_next_generation_individuals_from_crossover(Context<TIndividual>& c)
     {
         assert(c.n_parents >= 2);
         assert(c.next_generation.parents_idx.size() == c.n_parents);
-        assert(c.next_generation.individuals.size() == c.keep_n_parents);
-        const size_t population_size = c.prev_generation.individuals.size();
-        for (size_t i = c.keep_n_parents; i < population_size; i++) {
+        assert(c.next_generation.individuals.size() == c.n_keep_parents);
+        for (size_t i = c.n_keep_parents; i < c.population_size; i++) {
             size_t parent_a_i = c.n_parents * c.random.rnd01();
             size_t parent_b_i;
             do {
@@ -492,7 +498,7 @@ namespace varga
 
 
     template <typename TIndividual>
-    void random_mutation(Context<TIndividual>& c)
+    void next_generation_random_mutation(Context<TIndividual>& c)
     {
         for (auto &ind : c.next_generation.individuals) {
             if (c.random.rnd01() < c.p_mutation) {

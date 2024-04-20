@@ -12,3 +12,4 @@ max_double_array.o: examples/max_double_array.cpp
 
 clean:
 	rm -rf `find . -name *.o`
+	rm -rf `find . -name *.csv`
