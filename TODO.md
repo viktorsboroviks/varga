@@ -1,9 +1,15 @@
 # TODO
 
+## backlog
+
+- print genes as .csv
+  - new state function, expecting Individual method
+  - filter / period to be able to print periodically
+
+## notes
+
 - consider passing context to population and individual
   - make population a factory for individuals, setting all necessary parameters
-- consider if we need to break from state machine earlier,
-  since last generation is discarded
 - add more stats to print_result
   - runtime
   - generations

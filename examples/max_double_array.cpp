@@ -50,9 +50,9 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         return fitness;
     }
 
-    void single_point_crossover(const std::function<double(void)> &rnd01,
-                                Individual<std::vector<double>> &parent_a,
-                                Individual<std::vector<double>> &parent_b)
+    void crossover(const std::function<double(void)> &rnd01,
+                   Individual<std::vector<double>> &parent_a,
+                   Individual<std::vector<double>> &parent_b)
     {
         assert(genes.size() != 0);
         assert(parent_a.genes.size() != 0);
@@ -85,17 +85,19 @@ int main()
     c.p_mutation = g_p_mutation;
 
     varga::StateMachine<MyIndividual> sm{c};
-    sm.init_functions = {varga::randomize_prev_generation<MyIndividual>};
-    sm.state_functions = {varga::evaluate_prev_generation<MyIndividual>,
-                          varga::select_parents_as_most_fit<MyIndividual>,
-                          varga::move_parents_to_next_generation<MyIndividual>,
-                          varga::create_children_from_single_point_crossover<MyIndividual>,
-                          varga::random_mutation<MyIndividual>,
+    sm.init_functions = {varga::randomize_next_generation<MyIndividual>};
+    sm.state_functions = {varga::evaluate_next_generation<MyIndividual>,
+                          varga::sort_next_generation_by_fitness<MyIndividual>,
 //                          varga::print_fitness<MyIndividual>,
 //                          varga::print_context<MyIndividual>,
                           varga::print_progress<MyIndividual>,
-                          varga::change_generations<MyIndividual>};
-    sm.closure_functions = {varga::print_result<MyIndividual>};
+                          varga::change_generations<MyIndividual>,
+                          varga::select_next_generation_parents_as_prev_generation_best<MyIndividual>,
+                          varga::add_next_generation_individuals_from_parents<MyIndividual>,
+                          varga::add_next_generation_individuals_from_crossover<MyIndividual>,
+                          varga::next_generation_random_mutation<MyIndividual>};
+    sm.closure_functions = {varga::print_result<MyIndividual>,
+                            varga::create_best_fitness_log_csv<MyIndividual>};
     sm.run();
     return 0;
 }
