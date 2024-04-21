@@ -34,6 +34,18 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         return ss.str();
     }
 
+    void csv(const std::string filename)
+    {
+        std::ofstream f(filename);
+        f.is_open();
+        f << "i,value" << std::endl;
+        for (size_t i = 0; i < genes.size(); i++) {
+            f
+                << i << ","
+                << genes[i] << std::endl;
+        }
+    }
+
     void randomize(const std::function<double(void)> &rnd01)
     {
         for (auto& g : genes) {
@@ -83,6 +95,7 @@ int main()
     varga::Context<MyIndividual> c{g_population_size, g_n_generations};
     c.n_parents = g_n_parents;
     c.p_mutation = g_p_mutation;
+    c.progress.update_period = 10000;
 
     varga::StateMachine<MyIndividual> sm{c};
     sm.init_functions = {varga::randomize_next_generation<MyIndividual>};
@@ -97,7 +110,8 @@ int main()
                           varga::add_next_generation_individuals_from_crossover<MyIndividual>,
                           varga::next_generation_random_mutation<MyIndividual>};
     sm.closure_functions = {varga::print_result<MyIndividual>,
-                            varga::create_best_fitness_log_csv<MyIndividual>};
+                            varga::create_best_fitness_log_csv<MyIndividual>,
+                            varga::create_best_individual_csv<MyIndividual>};
     sm.run();
     return 0;
 }
