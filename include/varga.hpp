@@ -171,6 +171,12 @@ namespace varga
             return "error: method not implemented";
         }
 
+        virtual void csv(const std::string filename)
+        {
+            (void) filename;
+            std::cout << "error: method not implemented" << std::endl;
+        }
+
         virtual void randomize(const std::function<double(void)> &rnd01)
         {
             (void) rnd01();
@@ -237,11 +243,16 @@ namespace varga
             size_t n_keep_parents = 0;
             double p_mutation = 0.0;
 
-            size_t i_generation = 0;
+            // important! generations begin with 1st, not 0th
+            size_t generation = 1;
             bool stop_state_machine = false;
 
             std::vector<double> best_fitness_log;
             std::string best_fitness_log_filename{"best_fitness_log.csv"};
+
+            // by default create one at the end
+            size_t best_individual_csv_creation_period = n_generations;
+            std::string best_individual_filename_prefix{"best_individual_gen"};
 
             Context(size_t in_population_size, size_t in_n_generations) :
                 progress(in_n_generations),
@@ -265,6 +276,13 @@ namespace varga
                 next_generation.fitness.resize(0);
                 next_generation.sorted_idx.resize(0);
                 next_generation.parents_idx.resize(0);
+            }
+
+            const std::string get_best_individual_csv_filename()
+            {
+                std::stringstream ss;
+                ss << best_individual_filename_prefix << generation << ".csv";
+                return ss.str();
             }
     };
 
@@ -309,12 +327,11 @@ namespace varga
     template <typename TIndividual>
     void change_generations(Context<TIndividual>& c)
     {
-        c.i_generation++;
-        if (c.i_generation >= c.n_generations) {
+        if (c.generation >= c.n_generations) {
             c.stop_state_machine = true;
             return;
         }
-
+        c.generation++;
         c.swap_generations();
     }
 
@@ -322,7 +339,7 @@ namespace varga
     template <typename TIndividual>
     void print_context(Context<TIndividual>& c)
     {
-        std::cout << "i_geneation: " << c.i_generation << std::endl;
+        std::cout << "geneation: " << c.generation << std::endl;
         std::cout << "next_generation: " << std::endl;
         for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
             std::cout
@@ -353,7 +370,7 @@ namespace varga
     template <typename TIndividual>
     void print_fitness(Context<TIndividual>& c)
     {
-        std::cout << "i_geneation: " << c.i_generation << std::endl;
+        std::cout << "geneation: " << c.generation << std::endl;
         std::cout << "\tnext_generation:" << std::endl;
         std::cout << "\t\tfitness:" << std::endl;
         for (size_t i = 0; i < c.next_generation.fitness.size(); i++) {
@@ -388,7 +405,7 @@ namespace varga
     {
         std::ofstream f(c.best_fitness_log_filename);
         f.is_open();
-        f << "i_generation,best_fitness" << std::endl;
+        f << "generation,best_fitness" << std::endl;
         for (size_t g = 0; g < c.n_generations; g++) {
             f << g << "," << c.best_fitness_log[g] << std::endl;
         }
@@ -396,9 +413,22 @@ namespace varga
 
 
     template <typename TIndividual>
+    void create_best_individual_csv(Context<TIndividual>& c)
+    {
+        if (c.best_individual_csv_creation_period != 0
+        && (c.generation % c.best_individual_csv_creation_period) != 0) {
+            return;
+        }
+
+        TIndividual& best_individual = c.next_generation.individuals[c.next_generation.sorted_idx[0]];
+        best_individual.csv(c.get_best_individual_csv_filename());
+    }
+
+
+    template <typename TIndividual>
     void randomize_next_generation(Context<TIndividual>& c)
     {
-        assert (c.i_generation == 0);
+        assert (c.generation == 1);
         assert (c.next_generation.individuals.size() == 0);
 
         for (size_t i = 0; i < c.population_size; i++) {
