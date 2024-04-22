@@ -248,7 +248,7 @@ namespace varga
             bool stop_state_machine = false;
 
             std::vector<double> best_fitness_log;
-            std::string best_fitness_log_filename{"best_fitness_log.csv"};
+            std::string best_fitness_log_filename{""};
 
             // by default create one at the end
             size_t best_individual_csv_creation_period = n_generations;
@@ -403,6 +403,10 @@ namespace varga
     template <typename TIndividual>
     void create_best_fitness_log_csv(Context<TIndividual>& c)
     {
+        if (c.best_fitness_log_filename.empty()) {
+            return;
+        }
+
         std::ofstream f(c.best_fitness_log_filename);
         f.is_open();
         f << "generation,best_fitness" << std::endl;
