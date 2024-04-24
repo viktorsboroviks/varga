@@ -92,10 +92,11 @@ namespace varga
                 }
                 if (n % n_per_c != 0) {
                     n++;
+
                     return;
                 }
 
-                // generate a string first and then writhe the whole string to `os`
+                // generate a string first and then write the whole string to `os`
                 // to prevent blinking cursor from jumping all over the place
                 std::stringstream ss;
 
@@ -110,7 +111,15 @@ namespace varga
                 }
                 ss << c_closing_bracket;
                 ss << " " << std::fixed << std::setprecision(1) << (double)n/n_max * 100 << "%";
-                ss << " (" << std::scientific << std::setprecision(1) << iter_s(n_per_c) << " iter/s)";
+                ss << " (" << std::scientific << std::setprecision(1) << get_iter_s(n_per_c) << "/s";
+                double eta_s = get_eta_s(n_per_c);
+                ss << ", ETA "
+                    << std::setw(2) << std::setfill('0') << ((int)eta_s / 60 / 60) % 60
+                    << ":"
+                    << std::setw(2) << std::setfill('0') << ((int)eta_s / 60) % 60
+                    << ":"
+                    << std::setw(2) << std::setfill('0') << (int)eta_s % 60
+                    << ")";
                 if (text != "") {
                     ss << ", " << text;
                 }
@@ -122,15 +131,29 @@ namespace varga
                 ss << "\r";
                 os << ss.str();
                 n++;
+
+                update_last_time();
             }
 
-            double iter_s(size_t n_iter)
+            void update_last_time()
             {
-                assert(n_iter > 0);
-                std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
-                double duration = std::chrono::duration_cast<std::chrono::milliseconds>(now-last_time).count();
-                last_time = now;
-                return n_iter / (duration/1000);
+                last_time = std::chrono::steady_clock::now();
+            }
+
+            double get_iter_s(const size_t n_iter)
+            {
+                const std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
+                const double one_iter_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now-last_time).count()/n_iter;
+                return 1 / (one_iter_ms/1000);
+            }
+
+            double get_eta_s(const size_t n_iter)
+            {
+                const std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
+                const auto one_iter_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now-last_time)/n_iter;
+                const size_t remaining_n_iter = n_max - n;
+                const double eta_s = std::chrono::duration_cast<std::chrono::seconds>(one_iter_ms * remaining_n_iter).count();
+                return eta_s;
             }
 
             void os_clean(size_t n_chars = 100)
@@ -253,6 +276,10 @@ namespace varga
             // by default create one at the end
             size_t best_individual_csv_creation_period = n_generations;
             std::string best_individual_filename_prefix{"best_individual_gen"};
+
+            // runtime
+            //std::chrono::time_point start_time;
+            //std::chrono::time_point stop_time;
 
             Context(size_t in_population_size, size_t in_n_generations) :
                 progress(in_n_generations),
