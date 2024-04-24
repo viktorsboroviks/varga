@@ -111,18 +111,15 @@ namespace varga
                 }
                 ss << c_closing_bracket;
                 ss << " " << std::fixed << std::setprecision(1) << (double)n/n_max * 100 << "%";
-                ss << " (" << std::scientific << std::setprecision(1) << get_iter_s(n_per_c) << "/s";
+                ss << " " << std::scientific << std::setprecision(1) << get_iter_s(n_per_c) << "/s";
                 double eta_s = get_eta_s(n_per_c);
-                ss << ", ETA "
+                ss << " ETA "
                     << std::setw(2) << std::setfill('0') << ((int)eta_s / 60 / 60) % 60
                     << ":"
                     << std::setw(2) << std::setfill('0') << ((int)eta_s / 60) % 60
                     << ":"
-                    << std::setw(2) << std::setfill('0') << (int)eta_s % 60
-                    << ")";
-                if (text != "") {
-                    ss << ", " << text;
-                }
+                    << std::setw(2) << std::setfill('0') << (int)eta_s % 60;
+                ss << text;
                 // overwrite remalining command line with ' '
                 const size_t n_chars = 10;
                 for (size_t i = 0; i < n_chars; i++) {
@@ -411,7 +408,7 @@ namespace varga
     void print_progress(Context<TIndividual>& c)
     {
         std::stringstream ss;
-        ss << "best fitness: " << c.next_generation.best_fitness;
+        ss << " best fitness " << c.next_generation.best_fitness;
         c.progress.update(std::string(ss.str()));
     }
 
