@@ -109,7 +109,8 @@ int main()
                           varga::add_next_generation_individuals_from_parents<MyIndividual>,
                           varga::add_next_generation_individuals_from_crossover<MyIndividual>,
                           varga::next_generation_random_mutation<MyIndividual>};
-    sm.closure_functions = {varga::print_result<MyIndividual>,
+    sm.closure_functions = {varga::print_stats<MyIndividual>,
+                            varga::create_stats_file<MyIndividual>,
                             varga::create_best_fitness_log_csv<MyIndividual>,
                             varga::create_best_individual_csv<MyIndividual>};
     sm.run();

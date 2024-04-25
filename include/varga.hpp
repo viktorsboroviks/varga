@@ -14,6 +14,16 @@
 namespace varga
 {
     // tools
+    std::string seconds_to_hhmmss_string(const double seconds)
+    {
+        std::stringstream ss{};
+        ss << std::setw(2) << std::setfill('0') << ((int)seconds / 60 / 60) % 60
+            << ":"
+            << std::setw(2) << std::setfill('0') << ((int)seconds / 60) % 60
+            << ":"
+            << std::setw(2) << std::setfill('0') << (int)seconds % 60;
+        return ss.str();
+    }
 
     class Random
     {
@@ -113,12 +123,7 @@ namespace varga
                 ss << " " << std::fixed << std::setprecision(1) << (double)n/n_max * 100 << "%";
                 ss << " " << std::scientific << std::setprecision(1) << get_iter_s(n_per_c) << "/s";
                 double eta_s = get_eta_s(n_per_c);
-                ss << " ETA "
-                    << std::setw(2) << std::setfill('0') << ((int)eta_s / 60 / 60) % 60
-                    << ":"
-                    << std::setw(2) << std::setfill('0') << ((int)eta_s / 60) % 60
-                    << ":"
-                    << std::setw(2) << std::setfill('0') << (int)eta_s % 60;
+                ss << " ETA " << seconds_to_hhmmss_string(eta_s);
                 ss << text;
                 // overwrite remalining command line with ' '
                 const size_t n_chars = 10;
@@ -274,9 +279,11 @@ namespace varga
             size_t best_individual_csv_creation_period = n_generations;
             std::string best_individual_filename_prefix{"best_individual_gen"};
 
+            std::string stats_filename{"stats.txt"};
+
             // runtime
-            //std::chrono::time_point start_time;
-            //std::chrono::time_point stop_time;
+            std::chrono::time_point<std::chrono::steady_clock> start_time;
+            std::chrono::time_point<std::chrono::steady_clock> stop_time;
 
             Context(size_t in_population_size, size_t in_n_generations) :
                 progress(in_n_generations),
@@ -308,6 +315,24 @@ namespace varga
                 ss << best_individual_filename_prefix << generation << ".csv";
                 return ss.str();
             }
+
+            std::string get_stats()
+            {
+                const double runtime_s = std::chrono::duration_cast<std::chrono::seconds>(stop_time-start_time).count();
+                const double individual_s = (population_size * n_generations) / runtime_s;
+                const double best_fitness = next_generation.best_fitness;
+                std::stringstream ss{};
+                ss << "generations  \t" << n_generations << std::endl;
+                ss << "population   \t" << population_size << std::endl;
+                ss << "parents      \t" << n_parents << std::endl;
+                ss << "keep parents \t" << n_keep_parents << std::endl;
+                ss << "p(mutation)  \t" << p_mutation << std::endl;
+                ss << "-------------"   << std::endl;
+                ss << "runtime      \t" << seconds_to_hhmmss_string(runtime_s) << std::endl;
+                ss << "individuals/s\t" << individual_s << std::endl;
+                ss << "best fitness \t" << best_fitness << std::endl;
+                return ss.str();
+            }
     };
 
 
@@ -327,12 +352,14 @@ namespace varga
 
             void run()
             {
+                p_context->start_time = std::chrono::steady_clock::now();
                 for (state_function_t &f : init_functions) {
                     f(*p_context);
                 }
                 while (!p_context->stop_state_machine) {
                     for (state_function_t &f : state_functions) {
                         if (p_context->stop_state_machine) {
+                            p_context->stop_time = std::chrono::steady_clock::now();
                             break;
                         }
                         f(*p_context);
@@ -420,7 +447,26 @@ namespace varga
         size_t best_idx = c.next_generation.sorted_idx[0];
         std::cout << "best result:" << std::endl;
         std::cout << c.next_generation.individuals[best_idx].str(1) << std::endl;
-        std::cout << "best fitness: " << c.next_generation.best_fitness << std::endl;
+    }
+
+
+    template <typename TIndividual>
+    void print_stats(Context<TIndividual>& c)
+    {
+        std::cout << c.get_stats();
+    }
+
+
+    template <typename TIndividual>
+    void create_stats_file(Context<TIndividual>& c)
+    {
+        if (c.stats_filename.empty()) {
+            return;
+        }
+
+        std::ofstream f(c.stats_filename);
+        f.is_open();
+        f << c.get_stats();
     }
 
 
