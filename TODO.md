@@ -2,9 +2,7 @@
 
 ## backlog
 
-- print genes as .csv
-  - new state function, expecting Individual method
-  - filter / period to be able to print periodically
+- ?
 
 ## notes
 
