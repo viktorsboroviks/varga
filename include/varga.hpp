@@ -340,34 +340,33 @@ namespace varga
     class StateMachine {
         private:
             typedef std::function<void(Context<TIndividual>&)> state_function_t;
-            Context<TIndividual> *p_context;
+            Context<TIndividual>& context;
 
         public:
             std::vector<state_function_t> init_functions{};
             std::vector<state_function_t> state_functions{};
             std::vector<state_function_t> closure_functions{};
 
-            StateMachine(Context<TIndividual>& in_context) :
-                p_context(&in_context) {}
+            StateMachine(Context<TIndividual>& in_context) : context(in_context) {}
 
             void run()
             {
-                p_context->start_time = std::chrono::steady_clock::now();
+                context.start_time = std::chrono::steady_clock::now();
                 for (state_function_t &f : init_functions) {
-                    f(*p_context);
+                    f(context);
                 }
-                while (!p_context->stop_state_machine) {
+                while (!context.stop_state_machine) {
                     for (state_function_t &f : state_functions) {
-                        if (p_context->stop_state_machine) {
-                            p_context->stop_time = std::chrono::steady_clock::now();
+                        if (context.stop_state_machine) {
+                            context.stop_time = std::chrono::steady_clock::now();
                             break;
                         }
-                        f(*p_context);
+                        f(context);
                     }
                 }
-                p_context->progress.os_clean();
+                context.progress.os_clean();
                 for (state_function_t &f : closure_functions) {
-                    f(*p_context);
+                    f(context);
                 }
             }
     };
