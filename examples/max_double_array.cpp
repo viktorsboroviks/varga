@@ -34,7 +34,7 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         return ss.str();
     }
 
-    void csv(const std::string filename)
+    void create_csv(const std::string filename)
     {
         std::ofstream f(filename);
         f.is_open();
@@ -46,15 +46,17 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         }
     }
 
-    void randomize(const std::function<double(void)> &rnd01)
+    void randomize(varga::Settings& s, const std::function<double(void)> &rnd01)
     {
+        (void) s;
         for (auto& g : genes) {
             g = rnd01();
         }
     }
 
-    double get_fitness(void)
+    double get_fitness(varga::Settings& s)
     {
+        (void) s;
         double fitness = 0;
         for (auto& g : genes) {
             fitness += g;
@@ -62,10 +64,12 @@ struct MyIndividual : varga::Individual<std::vector<double>>
         return fitness;
     }
 
-    void crossover(const std::function<double(void)> &rnd01,
+    void crossover(varga::Settings& s,
+                   const std::function<double(void)> &rnd01,
                    Individual<std::vector<double>> &parent_a,
                    Individual<std::vector<double>> &parent_b)
     {
+        (void) s;
         assert(genes.size() != 0);
         assert(parent_a.genes.size() != 0);
         assert(parent_b.genes.size() != 0);

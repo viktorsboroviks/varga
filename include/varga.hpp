@@ -223,28 +223,32 @@ namespace varga
             return "error: method not implemented";
         }
 
-        virtual void csv(const std::string filename)
+        virtual void create_csv(const std::string filename)
         {
             (void) filename;
             std::cout << "error: method not implemented" << std::endl;
         }
 
-        virtual void randomize(const std::function<double(void)> &rnd01)
+        virtual void randomize(Settings& s, const std::function<double(void)> &rnd01)
         {
+            (void) s;
             (void) rnd01();
             std::cout << "error: method not implemented" << std::endl;
         }
 
-        virtual double get_fitness(void)
+        virtual double get_fitness(Settings& s)
         {
+            (void) s;
             std::cout << "error: method not implemented" << std::endl;
             return -1.0;
         }
 
-        virtual void crossover(const std::function<double(void)> &rnd01,
+        virtual void crossover(Settings& s,
+                               const std::function<double(void)> &rnd01,
                                Individual<TGenes>& parent_a,
                                Individual<TGenes>& parent_b)
         {
+            (void) s;
             (void) rnd01();
             (void) parent_a;
             (void) parent_b;
@@ -509,7 +513,7 @@ namespace varga
         }
 
         TIndividual& best_individual = c.next_generation.individuals[c.next_generation.sorted_idx[0]];
-        best_individual.csv(c.get_best_individual_csv_filename());
+        best_individual.create_csv(c.get_best_individual_csv_filename());
     }
 
 
@@ -521,7 +525,7 @@ namespace varga
 
         for (size_t i = 0; i < c.settings.population_size; i++) {
             TIndividual individual;
-            individual.randomize([&c](){return c.random.rnd01();});
+            individual.randomize(c.settings, [&c](){return c.random.rnd01();});
             c.next_generation.individuals.push_back(individual);
         }
     }
@@ -535,7 +539,7 @@ namespace varga
 
         // calculate fitness
         for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
-            double fitness = c.next_generation.individuals[i].get_fitness();
+            double fitness = c.next_generation.individuals[i].get_fitness(c.settings);
             c.next_generation.fitness.push_back(fitness);
         }
 
@@ -607,7 +611,8 @@ namespace varga
             TIndividual& parent_a = c.prev_generation.individuals[c.next_generation.parents_idx[parent_a_i]];
             TIndividual& parent_b = c.prev_generation.individuals[c.next_generation.parents_idx[parent_b_i]];
             TIndividual child{};
-            child.crossover([&c](){return c.random.rnd01();},
+            child.crossover(c.settings,
+                            [&c](){return c.random.rnd01();},
                             parent_a,
                             parent_b);
             c.next_generation.individuals.push_back(child);
