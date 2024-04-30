@@ -87,7 +87,8 @@ struct MyIndividual : varga::Individual<std::vector<double>>
 
     void random_mutation(varga::Settings& s, const std::function<double(void)> &rnd01)
     {
-        if (rnd01() < s.p_mutation_gene) {
+        assert(s.custom_parameter.find("p_mutation_gene") != s.custom_parameter.end());
+        if (rnd01() < s.custom_parameter["p_mutation_gene"]) {
             assert(genes.size() != 0);
             size_t mutation_i = rnd01() * genes.size();
             genes[mutation_i] = rnd01();
@@ -100,8 +101,8 @@ int main()
 {
     varga::Settings s{g_population_size, g_n_generations};
     s.n_parents = g_n_parents;
-    s.p_mutation_gene = g_p_mutation_gene;
     s.progress_update_period = 10000;
+    s.custom_parameter["p_mutation_gene"] = g_p_mutation_gene;
 
     varga::StateMachine<MyIndividual> sm{s};
     sm.init_functions = {varga::randomize_next_generation<MyIndividual>};

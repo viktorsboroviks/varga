@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <map>
 
 
 namespace varga
@@ -16,13 +17,12 @@ namespace varga
     // settings for Context and StateMachine
     struct Settings
     {
+        std::map<std::string, double> custom_parameter;
+
         size_t n_generations;
         size_t population_size;
         size_t n_parents = 0;
         size_t n_keep_parents = 0;
-        double p_mutation_gene = 0.0;
-        double p_mutation_gene_swap = 0.0;
-        double p_mutation_bad_gene = 0.0;
 
         size_t progress_update_period = 0;
 
@@ -337,18 +337,23 @@ namespace varga
                 const double runtime_s = std::chrono::duration_cast<std::chrono::seconds>(stop_time-start_time).count();
                 const double individual_s = (settings.population_size * settings.n_generations) / runtime_s;
                 const double best_fitness = next_generation.best_fitness;
+                const size_t first_col_width = 20;
                 std::stringstream ss{};
-                ss << "generations           \t" << settings.n_generations << std::endl;
-                ss << "population            \t" << settings.population_size << std::endl;
-                ss << "parents               \t" << settings.n_parents << std::endl;
-                ss << "keep parents          \t" << settings.n_keep_parents << std::endl;
-                ss << "p(mutation gene)      \t" << settings.p_mutation_gene << std::endl;
-                ss << "p(mutation bad gene)  \t" << settings.p_mutation_bad_gene << std::endl;
-                ss << "p(mutation gene swap) \t" << settings.p_mutation_gene_swap << std::endl;
-                ss << "---------------------"    << std::endl;
-                ss << "runtime               \t" << seconds_to_hhmmss_string(runtime_s) << std::endl;
-                ss << "individuals/s         \t" << individual_s << std::endl;
-                ss << "best fitness          \t" << best_fitness << std::endl;
+                // standard parameters
+                ss << std::left << std::setw(first_col_width) << "generations" << settings.n_generations << std::endl;
+                ss << std::left << std::setw(first_col_width) << "population" << settings.population_size << std::endl;
+                ss << std::left << std::setw(first_col_width) << "parents" << settings.n_parents << std::endl;
+                ss << std::left << std::setw(first_col_width) << "keep parents" << settings.n_keep_parents << std::endl;
+                ss << std::endl;
+                // custom parameters
+                for (const auto& pair : settings.custom_parameter) {
+                    ss << std::left << std::setw(first_col_width) << pair.first << pair.second << std::endl;
+                }
+                ss << std::endl;
+                // runtime stats
+                ss << std::left << std::setw(first_col_width) << "runtime" << seconds_to_hhmmss_string(runtime_s) << std::endl;
+                ss << std::left << std::setw(first_col_width) << "individuals/s" << individual_s << std::endl;
+                ss << std::left << std::setw(first_col_width) << "best fitness" << best_fitness << std::endl;
                 return ss.str();
             }
     };
