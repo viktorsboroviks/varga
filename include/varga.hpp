@@ -20,7 +20,7 @@ namespace varga
         size_t population_size;
         size_t n_parents = 0;
         size_t n_keep_parents = 0;
-        double p_mutation_individual = 0.0;
+        double p_mutation_gene = 0.0;
         double p_mutation_gene_swap = 0.0;
         double p_mutation_bad_gene = 0.0;
 
@@ -338,17 +338,17 @@ namespace varga
                 const double individual_s = (settings.population_size * settings.n_generations) / runtime_s;
                 const double best_fitness = next_generation.best_fitness;
                 std::stringstream ss{};
-                ss << "generations            \t" << settings.n_generations << std::endl;
-                ss << "population             \t" << settings.population_size << std::endl;
-                ss << "parents                \t" << settings.n_parents << std::endl;
-                ss << "keep parents           \t" << settings.n_keep_parents << std::endl;
-                ss << "p(mutation individual) \t" << settings.p_mutation_individual << std::endl;
-                ss << "p(mutation gene swap)  \t" << settings.p_mutation_gene_swap << std::endl;
-                ss << "p(mutation bad gene)   \t" << settings.p_mutation_bad_gene << std::endl;
-                ss << "----------------------"    << std::endl;
-                ss << "runtime                \t" << seconds_to_hhmmss_string(runtime_s) << std::endl;
-                ss << "individuals/s          \t" << individual_s << std::endl;
-                ss << "best fitness           \t" << best_fitness << std::endl;
+                ss << "generations           \t" << settings.n_generations << std::endl;
+                ss << "population            \t" << settings.population_size << std::endl;
+                ss << "parents               \t" << settings.n_parents << std::endl;
+                ss << "keep parents          \t" << settings.n_keep_parents << std::endl;
+                ss << "p(mutation gene)      \t" << settings.p_mutation_gene << std::endl;
+                ss << "p(mutation bad gene)  \t" << settings.p_mutation_bad_gene << std::endl;
+                ss << "p(mutation gene swap) \t" << settings.p_mutation_gene_swap << std::endl;
+                ss << "---------------------"    << std::endl;
+                ss << "runtime               \t" << seconds_to_hhmmss_string(runtime_s) << std::endl;
+                ss << "individuals/s         \t" << individual_s << std::endl;
+                ss << "best fitness          \t" << best_fitness << std::endl;
                 return ss.str();
             }
     };
