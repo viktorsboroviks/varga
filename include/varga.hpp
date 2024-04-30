@@ -337,7 +337,7 @@ namespace varga
                 const double runtime_s = std::chrono::duration_cast<std::chrono::seconds>(stop_time-start_time).count();
                 const double individual_s = (settings.population_size * settings.n_generations) / runtime_s;
                 const double best_fitness = next_generation.best_fitness;
-                const size_t first_col_width = 20;
+                const size_t first_col_width = 22;
                 std::stringstream ss{};
                 // standard parameters
                 ss << std::left << std::setw(first_col_width) << "generations" << settings.n_generations << std::endl;
