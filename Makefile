@@ -11,7 +11,7 @@ max_double_array.o: examples/max_double_array.cpp
 		examples/max_double_array.cpp -o max_double_array.o
 
 format: include/varga.hpp examples/max_double_array.cpp
-	clang-format -i include/varga.hpp examples/max_double_array.cpp
+	clang-format -i $^
 
 clean:
 	rm -rf `find . -name *.o`
