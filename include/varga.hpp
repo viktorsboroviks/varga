@@ -86,7 +86,7 @@ public:
 
 class Progress {
 private:
-    std::chrono::time_point<std::chrono::steady_clock> last_time =
+    std::chrono::time_point<std::chrono::steady_clock> last_update_time =
             std::chrono::steady_clock::now();
 
 public:
@@ -164,38 +164,31 @@ public:
         os << ss.str();
         n++;
 
-        update_last_time();
-    }
-
-    void update_last_time()
-    {
-        last_time = std::chrono::steady_clock::now();
+        last_update_time = std::chrono::steady_clock::now();
     }
 
     double get_iter_s(const size_t n_iter)
     {
         const std::chrono::time_point<std::chrono::steady_clock> now =
                 std::chrono::steady_clock::now();
-        const double one_iter_ms =
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                        now - last_time)
-                        .count() /
-                n_iter;
-        return 1 / (one_iter_ms / 1000);
+        const double us_per_n_iter =
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                        now - last_update_time)
+                        .count();
+        return n_iter / us_per_n_iter * 1000000;
     }
 
     double get_eta_s(const size_t n_iter)
     {
         const std::chrono::time_point<std::chrono::steady_clock> now =
                 std::chrono::steady_clock::now();
-        const auto one_iter_ms =
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                        now - last_time) /
-                n_iter;
-        const size_t remaining_n_iter = n_max - n;
-        const double eta_s = std::chrono::duration_cast<std::chrono::seconds>(
-                                     one_iter_ms * remaining_n_iter)
-                                     .count();
+        const double us_per_n_iter =
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                        now - last_update_time)
+                        .count();
+        const double remaining_n_iter = n_max - n;
+        const double eta_s =
+                us_per_n_iter / n_iter * remaining_n_iter / 1000000;
         return eta_s;
     }
 
