@@ -1,4 +1,4 @@
-.PHONY: all examples clean
+.PHONY: all examples format clean
 
 all: examples
 
@@ -9,6 +9,9 @@ max_double_array.o: examples/max_double_array.cpp
 		-std=c++20 -O3 \
 		-I./include \
 		examples/max_double_array.cpp -o max_double_array.o
+
+format: include/varga.hpp examples/max_double_array.cpp
+	clang-format -i $^
 
 clean:
 	rm -rf `find . -name *.o`
