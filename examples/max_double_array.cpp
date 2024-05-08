@@ -68,21 +68,7 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
                    Individual<std::vector<double> >& parent_a,
                    Individual<std::vector<double> >& parent_b)
     {
-        (void)s;
-        assert(genes.size() != 0);
-        assert(parent_a.genes.size() != 0);
-        assert(parent_b.genes.size() != 0);
-        assert(genes.size() == parent_a.genes.size());
-        assert(parent_a.genes.size() == parent_b.genes.size());
-        size_t crossover_i = rnd01() * genes.size();
-        for (size_t i = 0; i < genes.size(); i++) {
-            if (i < crossover_i) {
-                genes[i] = parent_a.genes[i];
-            }
-            else {
-                genes[i] = parent_b.genes[i];
-            }
-        }
+        uniform_crossover(s, rnd01, parent_a, parent_b);
     }
 
     void random_mutation(varga::Settings& s,
