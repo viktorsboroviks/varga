@@ -287,7 +287,8 @@ struct Individual {
 
     void one_point_crossover(varga::Settings& s,
                              const std::function<double(void)>& rnd01,
-                             Individual<T>& parent_a, Individual<T>& parent_b)
+                             Individual<TGenes>& parent_a,
+                             Individual<TGenes>& parent_b)
     {
         (void)s;
         assert(genes.size() != 0);
@@ -307,7 +308,8 @@ struct Individual {
 
     void two_point_crossover(varga::Settings& s,
                              const std::function<double(void)>& rnd01,
-                             Individual<T>& parent_a, Individual<T>& parent_b)
+                             Individual<TGenes>& parent_a,
+                             Individual<TGenes>& parent_b)
     {
         (void)s;
         assert(genes.size() != 0);
