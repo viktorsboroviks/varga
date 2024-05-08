@@ -260,6 +260,80 @@ struct Individual {
         (void)parent_a;
         (void)parent_b;
         std::cout << "error: method not implemented" << std::endl;
+        std::cout << "hint: you can call one of existing crossover functions"
+                  << std::endl;
+    }
+
+    void uniform_crossover(varga::Settings& s,
+                           const std::function<double(void)>& rnd01,
+                           Individual<TGenes>& parent_a,
+                           Individual<TGenes>& parent_b)
+    {
+        (void)s;
+        assert(genes.size() != 0);
+        assert(parent_a.genes.size() != 0);
+        assert(parent_b.genes.size() != 0);
+        assert(genes.size() == parent_a.genes.size());
+        assert(parent_a.genes.size() == parent_b.genes.size());
+        for (size_t i = 0; i < genes.size(); i++) {
+            if (rnd01() < 0.5) {
+                genes[i] = parent_a.genes[i];
+            }
+            else {
+                genes[i] = parent_b.genes[i];
+            }
+        }
+    }
+
+    void one_point_crossover(varga::Settings& s,
+                             const std::function<double(void)>& rnd01,
+                             Individual<T>& parent_a, Individual<T>& parent_b)
+    {
+        (void)s;
+        assert(genes.size() != 0);
+        assert(parent_a.genes.size() != 0);
+        assert(parent_b.genes.size() != 0);
+        assert(genes.size() == parent_a.genes.size());
+        assert(parent_a.genes.size() == parent_b.genes.size());
+
+        const size_t point = rnd01() * genes.size();
+        for (size_t i = 0; i < genes.size(); i++) {
+            if (i < point)
+                genes[i] = parent_a.genes[i];
+            else
+                genes[i] = parent_b.genes[i];
+        }
+    }
+
+    void two_point_crossover(varga::Settings& s,
+                             const std::function<double(void)>& rnd01,
+                             Individual<T>& parent_a, Individual<T>& parent_b)
+    {
+        (void)s;
+        assert(genes.size() != 0);
+        assert(parent_a.genes.size() != 0);
+        assert(parent_b.genes.size() != 0);
+        assert(genes.size() == parent_a.genes.size());
+        assert(parent_a.genes.size() == parent_b.genes.size());
+        size_t point_a;
+        do {
+            point_a = rnd01() * genes.size();
+            if (point_a < (genes.size() - 1))
+                break;
+        } while (true);
+        size_t point_b;
+        do {
+            point_b = rnd01() * genes.size();
+            if (point_b > point_a)
+                break;
+        } while (true);
+
+        for (size_t i = 0; i < genes.size(); i++) {
+            if (i < point_a || i > point_b)
+                genes[i] = parent_a.genes[i];
+            else
+                genes[i] = parent_b.genes[i];
+        }
     }
 
     void random_mutation(Settings& s, const std::function<double(void)>& rnd01)
