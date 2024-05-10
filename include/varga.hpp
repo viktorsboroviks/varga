@@ -264,7 +264,7 @@ struct Individual {
                   << std::endl;
     }
 
-    void uniform_crossover(varga::Settings& s,
+    void uniform_crossover(Settings& s,
                            const std::function<double(void)>& rnd01,
                            Individual<TGenes>& parent_a,
                            Individual<TGenes>& parent_b)
@@ -285,7 +285,7 @@ struct Individual {
         }
     }
 
-    void one_point_crossover(varga::Settings& s,
+    void one_point_crossover(Settings& s,
                              const std::function<double(void)>& rnd01,
                              Individual<TGenes>& parent_a,
                              Individual<TGenes>& parent_b)
@@ -306,7 +306,7 @@ struct Individual {
         }
     }
 
-    void two_point_crossover(varga::Settings& s,
+    void two_point_crossover(Settings& s,
                              const std::function<double(void)>& rnd01,
                              Individual<TGenes>& parent_a,
                              Individual<TGenes>& parent_b)
@@ -338,10 +338,20 @@ struct Individual {
         }
     }
 
-    void random_mutation(Settings& s, const std::function<double(void)>& rnd01)
+    void mutate(Settings& s, const std::function<double(void)>& rnd01)
     {
         (void)s;
         (void)rnd01;
+        std::cout << "error: method not implemented" << std::endl;
+    }
+
+    void replace(Settings& s,
+                 const std::function<double(void)>& rnd01,
+                 std::vector<Individual<TGenes>>& all_individuals)
+    {
+        (void)s;
+        (void)rnd01;
+        (void)all_individuals;
         std::cout << "error: method not implemented" << std::endl;
     }
 };
@@ -715,10 +725,20 @@ void add_next_gen_individuals_from_crossover(Context<TIndividual>& c)
 }
 
 template <typename TIndividual>
-void next_gen_random_mutation(Context<TIndividual>& c)
+void next_gen_replacements(Context<TIndividual>& c)
 {
     for (auto& ind : c.next_generation.individuals) {
-        ind.random_mutation(c.settings, [&c]() { return c.random.rnd01(); });
+        ind.replace(
+                c.settings, [&c]() { return c.random.rnd01(); },
+                c.next_generation.individuals);
+    }
+}
+
+template <typename TIndividual>
+void next_gen_mutations(Context<TIndividual>& c)
+{
+    for (auto& ind : c.next_generation.individuals) {
+        ind.mutate(c.settings, [&c]() { return c.random.rnd01(); });
     }
 }
 

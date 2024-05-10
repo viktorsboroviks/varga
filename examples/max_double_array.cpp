@@ -65,14 +65,14 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
 
     void crossover(varga::Settings& s,
                    const std::function<double(void)>& rnd01,
-                   Individual<std::vector<double> >& parent_a,
-                   Individual<std::vector<double> >& parent_b)
+                   varga::Individual<std::vector<double> >& parent_a,
+                   varga::Individual<std::vector<double> >& parent_b)
     {
         uniform_crossover(s, rnd01, parent_a, parent_b);
     }
 
-    void random_mutation(varga::Settings& s,
-                         const std::function<double(void)>& rnd01)
+    void mutate(varga::Settings& s,
+                const std::function<double(void)>& rnd01)
     {
         assert(s.custom_parameter.find("p_mutation_gene") !=
                s.custom_parameter.end());
@@ -101,7 +101,7 @@ int main()
             varga::select_next_gen_parents_as_prev_gen_best<MyIndividual>,
             varga::add_next_gen_individuals_from_parents<MyIndividual>,
             varga::add_next_gen_individuals_from_crossover<MyIndividual>,
-            varga::next_gen_random_mutation<MyIndividual>};
+            varga::next_gen_mutations<MyIndividual>};
     sm.closure_functions = {varga::print_stats<MyIndividual>,
                             varga::create_stats_file<MyIndividual>,
                             varga::create_best_fitness_log_csv<MyIndividual>,
