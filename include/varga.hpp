@@ -25,6 +25,8 @@ struct Settings {
 
     double p_replace_individual = 0.0;
     double p_replace_gene = 0.0;
+    double p_mutate_gene = 0.0;
+    double p_swap_gene = 0.0;
 
     size_t progress_update_period = 0;
 
@@ -237,7 +239,7 @@ struct Individual {
     virtual void create_csv(const std::string filename)
     {
         (void)filename;
-        std::cout << "error: method not implemented" << std::endl;
+        std::cout << "error: create_csv not implemented" << std::endl;
     }
 
     virtual void randomize(Settings& s,
@@ -245,13 +247,13 @@ struct Individual {
     {
         (void)s;
         (void)rnd01();
-        std::cout << "error: method not implemented" << std::endl;
+        std::cout << "error: randomize method not implemented" << std::endl;
     }
 
     virtual double get_fitness(Settings& s)
     {
         (void)s;
-        std::cout << "error: method not implemented" << std::endl;
+        std::cout << "error: get_fitness method not implemented" << std::endl;
         return -1.0;
     }
 
@@ -265,7 +267,7 @@ struct Individual {
         (void)rnd01();
         (void)parent_a;
         (void)parent_b;
-        std::cout << "error: method not implemented" << std::endl;
+        std::cout << "error: crossover method not implemented" << std::endl;
         std::cout << "hint: you can call one of existing crossover functions"
                   << std::endl;
     }
@@ -347,11 +349,33 @@ struct Individual {
         }
     }
 
-    void mutate(Settings& s, const std::function<double(void)>& rnd01)
+    template <typename TGene>
+    void mutate_gene(Settings& s,
+                     TGene& g,
+                     const std::function<double(void)>& rnd01)
     {
         (void)s;
+        (void)g;
         (void)rnd01;
-        std::cout << "error: method not implemented" << std::endl;
+        std::cout << "error: mutate_gene method not implemented" << std::endl;
+    }
+
+    void mutate(Settings& s, const std::function<double(void)>& rnd01)
+    {
+        for (auto& g : genes) {
+            mutate_gene(s, g, rnd01);
+        }
+    }
+
+    void swap_genes(Settings& s, const std::function<double(void)>& rnd01)
+    {
+        if (rnd01() < s.p_swap_gene) {
+            const size_t i1 = rnd01() * genes.size();
+            const size_t i2 = rnd01() * genes.size();
+            const auto store_gene = genes[i1];
+            genes[i1] = genes[i2];
+            genes[i2] = store_gene;
+        }
     }
 
     template <typename TIndividual>
@@ -792,6 +816,14 @@ void next_gen_mutations(Context<TIndividual>& c)
 {
     for (auto& ind : c.next_generation.individuals) {
         ind.mutate(c.settings, [&c]() { return c.random.rnd01(); });
+    }
+}
+
+template <typename TIndividual>
+void next_gen_swaps(Context<TIndividual>& c)
+{
+    for (auto& ind : c.next_generation.individuals) {
+        ind.swap_genes(c.settings, [&c]() { return c.random.rnd01(); });
     }
 }
 
