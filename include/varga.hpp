@@ -23,6 +23,9 @@ struct Settings {
     size_t n_parents_random = 0;
     size_t n_parents_randomized = 0;
 
+    double p_replace_individual = 0.0;
+    double p_replace_gene = 0.0;
+
     size_t progress_update_period = 0;
 
     std::string best_fitness_log_filename{""};
@@ -252,10 +255,11 @@ struct Individual {
         return -1.0;
     }
 
-    virtual void crossover(Settings& s,
-                           const std::function<double(void)>& rnd01,
-                           Individual<TGenes>& parent_a,
-                           Individual<TGenes>& parent_b)
+    template <typename TIndividual>
+    void crossover(Settings& s,
+                   const std::function<double(void)>& rnd01,
+                   TIndividual& parent_a,
+                   TIndividual& parent_b)
     {
         (void)s;
         (void)rnd01();
@@ -266,10 +270,11 @@ struct Individual {
                   << std::endl;
     }
 
+    template <typename TIndividual>
     void uniform_crossover(Settings& s,
                            const std::function<double(void)>& rnd01,
-                           Individual<TGenes>& parent_a,
-                           Individual<TGenes>& parent_b)
+                           TIndividual& parent_a,
+                           TIndividual& parent_b)
     {
         (void)s;
         assert(genes.size() != 0);
@@ -287,10 +292,11 @@ struct Individual {
         }
     }
 
+    template <typename TIndividual>
     void one_point_crossover(Settings& s,
                              const std::function<double(void)>& rnd01,
-                             Individual<TGenes>& parent_a,
-                             Individual<TGenes>& parent_b)
+                             TIndividual& parent_a,
+                             TIndividual& parent_b)
     {
         (void)s;
         assert(genes.size() != 0);
@@ -308,10 +314,11 @@ struct Individual {
         }
     }
 
+    template <typename TIndividual>
     void two_point_crossover(Settings& s,
                              const std::function<double(void)>& rnd01,
-                             Individual<TGenes>& parent_a,
-                             Individual<TGenes>& parent_b)
+                             TIndividual& parent_a,
+                             TIndividual& parent_b)
     {
         (void)s;
         assert(genes.size() != 0);
@@ -347,14 +354,27 @@ struct Individual {
         std::cout << "error: method not implemented" << std::endl;
     }
 
+    template <typename TIndividual>
     void replace(Settings& s,
                  const std::function<double(void)>& rnd01,
-                 std::vector<Individual<TGenes>>& all_individuals)
+                 const std::vector<TIndividual>& all_individuals)
     {
-        (void)s;
-        (void)rnd01;
-        (void)all_individuals;
-        std::cout << "error: method not implemented" << std::endl;
+        // replace individual (all genes)
+        if (rnd01() < s.p_replace_individual) {
+            const size_t src_idx = rnd01() * all_individuals.size();
+            for (size_t i = 0; i < genes.size(); i++) {
+                genes[i] = all_individuals[src_idx].genes[i];
+            }
+            return;
+        }
+
+        // replace gene
+        for (auto& g : genes) {
+            if (rnd01() < s.p_replace_gene) {
+                const size_t src_idx = rnd01() * genes.size();
+                g = genes[src_idx];
+            }
+        }
     }
 };
 
@@ -693,8 +713,7 @@ void select_next_gen_parents(Context<TIndividual>& c)
     // random
     assert(c.prev_generation.best_idx.size() >= c.settings.n_parents_random);
     for (size_t i = 0; i < c.settings.n_parents_random; i++) {
-        size_t parent_i =
-                c.random.rnd01() * c.prev_generation.best_idx.size();
+        size_t parent_i = c.random.rnd01() * c.prev_generation.best_idx.size();
         c.next_generation.parents.push_back(
                 c.prev_generation.individuals[parent_i]);
     }
