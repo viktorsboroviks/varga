@@ -363,7 +363,7 @@ struct Population {
     std::vector<TIndividual> individuals{};
     std::vector<double> fitness{};
     double best_fitness = 0;
-    std::vector<size_t> sorted_idx{};
+    std::vector<size_t> best_idx{};
     std::vector<TIndividual> parents{};
 
     void update_best_fitness()
@@ -415,7 +415,7 @@ public:
         next_generation.individuals.resize(0);
         next_generation.parents.resize(0);
         next_generation.fitness.resize(0);
-        next_generation.sorted_idx.resize(0);
+        next_generation.best_idx.resize(0);
     }
 
     const std::string get_best_individual_csv_filename()
@@ -532,9 +532,9 @@ void print_context(Context<TIndividual>& c)
                   << "\t\tfitness: " << c.next_generation.fitness[i]
                   << std::endl;
     }
-    std::cout << "\tsorted_idx:" << std::endl;
-    for (size_t i = 0; i < c.next_generation.sorted_idx.size(); i++) {
-        std::cout << "\t\t[" << i << "]:" << c.next_generation.sorted_idx[i]
+    std::cout << "\tbest_idx:" << std::endl;
+    for (size_t i = 0; i < c.next_generation.best_idx.size(); i++) {
+        std::cout << "\t\t[" << i << "]:" << c.next_generation.best_idx[i]
                   << std::endl;
     }
     std::cout << "next_generation: " << std::endl;
@@ -575,7 +575,7 @@ template <typename TIndividual>
 void print_result(Context<TIndividual>& c)
 {
     std::stringstream ss;
-    size_t best_idx = c.next_generation.sorted_idx[0];
+    size_t best_idx = c.next_generation.best_idx[0];
     std::cout << "best result:" << std::endl;
     std::cout << c.next_generation.individuals[best_idx].str(1) << std::endl;
 }
@@ -622,7 +622,7 @@ void create_best_individual_csv(Context<TIndividual>& c)
     }
 
     TIndividual& best_individual =
-            c.next_generation.individuals[c.next_generation.sorted_idx[0]];
+            c.next_generation.individuals[c.next_generation.best_idx[0]];
     best_individual.create_csv(c.get_best_individual_csv_filename());
 }
 
@@ -659,17 +659,17 @@ void evaluate_next_gen(Context<TIndividual>& c)
 template <typename TIndividual>
 void sort_next_gen_by_fitness(Context<TIndividual>& c)
 {
-    // init .sorted_idx
+    // init .best_idx
     assert(c.next_generation.individuals.size() == c.settings.population_size);
     assert(c.next_generation.fitness.size() == c.settings.population_size);
-    assert(c.next_generation.sorted_idx.size() == 0);
+    assert(c.next_generation.best_idx.size() == 0);
     for (size_t i = 0; i < c.settings.population_size; i++) {
-        c.next_generation.sorted_idx.push_back(i);
+        c.next_generation.best_idx.push_back(i);
     }
-    assert(c.next_generation.sorted_idx.size() == c.settings.population_size);
-    // fill .sorted_idx
-    std::sort(c.next_generation.sorted_idx.begin(),
-              c.next_generation.sorted_idx.end(),
+    assert(c.next_generation.best_idx.size() == c.settings.population_size);
+    // fill .best_idx
+    std::sort(c.next_generation.best_idx.begin(),
+              c.next_generation.best_idx.end(),
               [&c](size_t a, size_t b) -> bool {
                   return c.next_generation.fitness[a] >
                          c.next_generation.fitness[b];
@@ -679,28 +679,28 @@ void sort_next_gen_by_fitness(Context<TIndividual>& c)
 template <typename TIndividual>
 void select_next_gen_parents(Context<TIndividual>& c)
 {
-    assert(c.prev_generation.sorted_idx.size() == c.settings.population_size);
+    assert(c.prev_generation.best_idx.size() == c.settings.population_size);
     assert(c.next_generation.parents.size() == 0);
 
     // best
-    assert(c.prev_generation.sorted_idx.size() >= c.settings.n_parents_best);
+    assert(c.prev_generation.best_idx.size() >= c.settings.n_parents_best);
     for (size_t i = 0; i < c.settings.n_parents_best; i++) {
-        size_t parent_i = c.prev_generation.sorted_idx[i];
+        size_t parent_i = c.prev_generation.best_idx[i];
         c.next_generation.parents.push_back(
                 c.prev_generation.individuals[parent_i]);
     }
 
     // random
-    assert(c.prev_generation.sorted_idx.size() >= c.settings.n_parents_random);
+    assert(c.prev_generation.best_idx.size() >= c.settings.n_parents_random);
     for (size_t i = 0; i < c.settings.n_parents_random; i++) {
         size_t parent_i =
-                c.random.rnd01() * c.prev_generation.sorted_idx.size();
+                c.random.rnd01() * c.prev_generation.best_idx.size();
         c.next_generation.parents.push_back(
                 c.prev_generation.individuals[parent_i]);
     }
 
     // randomized
-    for (size_t i = 0; i < c.settings.n_parents_random; i++) {
+    for (size_t i = 0; i < c.settings.n_parents_randomized; i++) {
         TIndividual individual;
         individual.randomize(c.settings, [&c]() { return c.random.rnd01(); });
         c.next_generation.parents.push_back(individual);
@@ -719,11 +719,11 @@ void add_next_gen_individuals_from_elite(Context<TIndividual>& c)
             c.settings.n_parents_randomized));
     assert(c.next_generation.individuals.size() == 0);
 
-    assert(c.prev_generation.sorted_idx.size() >= c.settings.n_elite);
+    assert(c.prev_generation.best_idx.size() >= c.settings.n_elite);
     for (size_t i = 0; i < c.settings.n_elite; i++) {
-        size_t parent_i = c.prev_generation.sorted_idx[i];
-        c.next_generation.parents.push_back(
-                c.prev_generation.individuals[parent_i]);
+        size_t elite_i = c.prev_generation.best_idx[i];
+        c.next_generation.individuals.push_back(
+                c.prev_generation.individuals[elite_i]);
     }
 
     assert(c.next_generation.individuals.size() == c.settings.n_elite);
