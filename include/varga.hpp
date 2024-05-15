@@ -642,7 +642,7 @@ void evaluate_next_gen(Context<TIndividual>& c)
 
     // calculate fitness
     for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
-        double fitness =
+        const double fitness =
                 c.next_generation.individuals[i].get_fitness(c.settings);
         c.next_generation.fitness.push_back(fitness);
     }
