@@ -71,8 +71,7 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
         uniform_crossover(s, rnd01, parent_a, parent_b);
     }
 
-    void mutate(varga::Settings& s,
-                const std::function<double(void)>& rnd01)
+    void mutate(varga::Settings& s, const std::function<double(void)>& rnd01)
     {
         assert(s.custom_parameter.find("p_mutation_gene") !=
                s.custom_parameter.end());

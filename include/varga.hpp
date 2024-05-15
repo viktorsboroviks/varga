@@ -18,8 +18,10 @@ struct Settings {
 
     size_t n_generations;
     size_t population_size;
-    size_t n_parents = 0;
-    size_t n_keep_parents = 0;
+    size_t n_elite = 0;
+    size_t n_parents_best = 0;
+    size_t n_parents_random = 0;
+    size_t n_parents_randomized = 0;
 
     size_t progress_update_period = 0;
 
@@ -362,7 +364,7 @@ struct Population {
     std::vector<double> fitness{};
     double best_fitness = 0;
     std::vector<size_t> sorted_idx{};
-    std::vector<size_t> parents_idx{};
+    std::vector<TIndividual> parents{};
 
     void update_best_fitness()
     {
@@ -411,9 +413,9 @@ public:
 
         // clean the space for the next generation
         next_generation.individuals.resize(0);
+        next_generation.parents.resize(0);
         next_generation.fitness.resize(0);
         next_generation.sorted_idx.resize(0);
-        next_generation.parents_idx.resize(0);
     }
 
     const std::string get_best_individual_csv_filename()
@@ -440,10 +442,14 @@ public:
            << settings.n_generations << std::endl;
         ss << std::left << std::setw(first_col_width) << "population"
            << settings.population_size << std::endl;
-        ss << std::left << std::setw(first_col_width) << "parents"
-           << settings.n_parents << std::endl;
-        ss << std::left << std::setw(first_col_width) << "keep parents"
-           << settings.n_keep_parents << std::endl;
+        ss << std::left << std::setw(first_col_width) << "parents best"
+           << settings.n_parents_best << std::endl;
+        ss << std::left << std::setw(first_col_width) << "parents random"
+           << settings.n_parents_random << std::endl;
+        ss << std::left << std::setw(first_col_width) << "parents randomized"
+           << settings.n_parents_randomized << std::endl;
+        ss << std::left << std::setw(first_col_width) << "elite"
+           << settings.n_elite << std::endl;
         ss << std::endl;
         // custom parameters
         for (const auto& pair : settings.custom_parameter) {
@@ -537,10 +543,9 @@ void print_context(Context<TIndividual>& c)
                   << "\t\tindividuals:" << std::endl
                   << c.next_generation.individuals[i].str(3);
     }
-    std::cout << "\tparents_idx:" << std::endl;
-    for (size_t i = 0; i < c.next_generation.parents_idx.size(); i++) {
-        std::cout << "\t\t[" << i << "]:" << c.next_generation.parents_idx[i]
-                  << std::endl;
+    std::cout << "\tparents:" << std::endl;
+    for (size_t i = 0; i < c.next_generation.parents.size(); i++) {
+        std::cout << c.next_generation.parents[i].str(2);
     }
 }
 
@@ -672,56 +677,85 @@ void sort_next_gen_by_fitness(Context<TIndividual>& c)
 }
 
 template <typename TIndividual>
-void select_next_gen_parents_as_prev_gen_best(Context<TIndividual>& c)
+void select_next_gen_parents(Context<TIndividual>& c)
 {
     assert(c.prev_generation.sorted_idx.size() == c.settings.population_size);
-    assert(c.next_generation.parents_idx.size() == 0);
-    for (size_t i = 0; i < c.settings.n_parents; i++) {
+    assert(c.next_generation.parents.size() == 0);
+
+    // best
+    assert(c.prev_generation.sorted_idx.size() >= c.settings.n_parents_best);
+    for (size_t i = 0; i < c.settings.n_parents_best; i++) {
         size_t parent_i = c.prev_generation.sorted_idx[i];
-        c.next_generation.parents_idx.push_back(parent_i);
+        c.next_generation.parents.push_back(
+                c.prev_generation.individuals[parent_i]);
     }
+
+    // random
+    assert(c.prev_generation.sorted_idx.size() >= c.settings.n_parents_random);
+    for (size_t i = 0; i < c.settings.n_parents_random; i++) {
+        size_t parent_i =
+                c.random.rnd01() * c.prev_generation.sorted_idx.size();
+        c.next_generation.parents.push_back(
+                c.prev_generation.individuals[parent_i]);
+    }
+
+    // randomized
+    for (size_t i = 0; i < c.settings.n_parents_random; i++) {
+        TIndividual individual;
+        individual.randomize(c.settings, [&c]() { return c.random.rnd01(); });
+        c.next_generation.parents.push_back(individual);
+    }
+
+    assert(c.next_generation.parents.size() ==
+           (c.settings.n_parents_best + c.settings.n_parents_random +
+            c.settings.n_parents_randomized));
 }
 
 template <typename TIndividual>
-void add_next_gen_individuals_from_parents(Context<TIndividual>& c)
+void add_next_gen_individuals_from_elite(Context<TIndividual>& c)
 {
-    assert(c.next_generation.parents_idx.size() >= c.settings.n_keep_parents);
+    assert(c.next_generation.parents.size() ==
+           (c.settings.n_parents_best + c.settings.n_parents_random +
+            c.settings.n_parents_randomized));
     assert(c.next_generation.individuals.size() == 0);
-    for (size_t i = 0; i < c.settings.n_keep_parents; i++) {
-        size_t parent_i = c.next_generation.parents_idx[i];
-        TIndividual parent = c.prev_generation.individuals[parent_i];
-        c.next_generation.individuals.push_back(parent);
+
+    assert(c.prev_generation.sorted_idx.size() >= c.settings.n_elite);
+    for (size_t i = 0; i < c.settings.n_elite; i++) {
+        size_t parent_i = c.prev_generation.sorted_idx[i];
+        c.next_generation.parents.push_back(
+                c.prev_generation.individuals[parent_i]);
     }
-    assert(c.next_generation.individuals.size() == c.settings.n_keep_parents);
+
+    assert(c.next_generation.individuals.size() == c.settings.n_elite);
 }
 
 template <typename TIndividual>
 void add_next_gen_individuals_from_crossover(Context<TIndividual>& c)
 {
-    assert(c.settings.n_parents >= 2);
-    assert(c.next_generation.parents_idx.size() == c.settings.n_parents);
-    assert(c.next_generation.individuals.size() == c.settings.n_keep_parents);
-    for (size_t i = c.settings.n_keep_parents; i < c.settings.population_size;
-         i++) {
-        size_t parent_a_i = c.settings.n_parents * c.random.rnd01();
+    assert(c.next_generation.parents.size() >= 2);
+    assert(c.next_generation.parents.size() ==
+           (c.settings.n_parents_best + c.settings.n_parents_random +
+            c.settings.n_parents_randomized));
+    assert(c.next_generation.individuals.size() == c.settings.n_elite);
+
+    for (size_t i = c.next_generation.individuals.size();
+         i < c.settings.population_size; i++) {
+        size_t parent_a_i =
+                c.random.rnd01() * c.next_generation.parents.size();
         size_t parent_b_i;
         do {
-            parent_b_i = c.settings.n_parents * c.random.rnd01();
+            parent_b_i = c.random.rnd01() * c.next_generation.parents.size();
         } while (parent_b_i == parent_a_i);
-        TIndividual& parent_a =
-                c.prev_generation.individuals
-                        [c.next_generation.parents_idx[parent_a_i]];
-        TIndividual& parent_b =
-                c.prev_generation.individuals
-                        [c.next_generation.parents_idx[parent_b_i]];
+        TIndividual& parent_a = c.next_generation.parents[parent_a_i];
+        TIndividual& parent_b = c.next_generation.parents[parent_b_i];
         TIndividual child{};
         child.crossover(
                 c.settings, [&c]() { return c.random.rnd01(); }, parent_a,
                 parent_b);
         c.next_generation.individuals.push_back(child);
     }
-    assert(c.next_generation.individuals.size() ==
-           c.prev_generation.individuals.size());
+
+    assert(c.next_generation.individuals.size() == c.settings.population_size);
 }
 
 template <typename TIndividual>
