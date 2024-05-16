@@ -349,35 +349,6 @@ struct Individual {
         }
     }
 
-    template <typename TGene>
-    void mutate_gene(Settings& s,
-                     TGene& g,
-                     const std::function<double(void)>& rnd01)
-    {
-        (void)s;
-        (void)g;
-        (void)rnd01;
-        std::cout << "error: mutate_gene method not implemented" << std::endl;
-    }
-
-    void mutate(Settings& s, const std::function<double(void)>& rnd01)
-    {
-        for (auto& g : genes) {
-            mutate_gene(s, g, rnd01);
-        }
-    }
-
-    void swap_genes(Settings& s, const std::function<double(void)>& rnd01)
-    {
-        if (rnd01() < s.p_swap_gene) {
-            const size_t i1 = rnd01() * genes.size();
-            const size_t i2 = rnd01() * genes.size();
-            const auto store_gene = genes[i1];
-            genes[i1] = genes[i2];
-            genes[i2] = store_gene;
-        }
-    }
-
     template <typename TIndividual>
     void replace(Settings& s,
                  const std::function<double(void)>& rnd01,
@@ -399,6 +370,37 @@ struct Individual {
                 g = genes[src_idx];
             }
         }
+    }
+
+    template <typename TIndividual>
+    void swap(Settings& s,
+              const std::function<double(void)>& rnd01,
+              const std::vector<TIndividual>& all_individuals)
+    {
+        // follows the same approach as replace() for simplicity
+
+        // swap individuals
+        // there is currently no use case for this, but it might be helpful
+        // in some configurations in the future.
+        (void)all_individuals;
+
+        // swap gene
+        if (rnd01() < s.p_swap_gene) {
+            const size_t i1 = rnd01() * genes.size();
+            const size_t i2 = rnd01() * genes.size();
+            const auto store_gene = genes[i1];
+            genes[i1] = genes[i2];
+            genes[i2] = store_gene;
+        }
+    }
+
+    virtual void mutate(Settings& s, const std::function<double(void)>& rnd01)
+    {
+        // this method is very individual-specific, so to not overthink it
+        // I leave it virtual
+        (void)s;
+        (void)rnd01;
+        std::cout << "error: mutate method not implemented" << std::endl;
     }
 };
 
@@ -823,7 +825,9 @@ template <typename TIndividual>
 void next_gen_swaps(Context<TIndividual>& c)
 {
     for (auto& ind : c.next_generation.individuals) {
-        ind.swap_genes(c.settings, [&c]() { return c.random.rnd01(); });
+        ind.swap(
+                c.settings, [&c]() { return c.random.rnd01(); },
+                c.next_generation.individuals);
     }
 }
 

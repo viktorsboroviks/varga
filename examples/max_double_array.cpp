@@ -6,8 +6,8 @@
 const size_t g_n_generations = 1000000;
 const size_t g_population_size = 10;
 const size_t g_individual_n_genes = 100;
-const size_t g_n_parents = 3;
-const double g_p_mutation_gene = 0.05;
+const size_t g_n_parents_best = 3;
+const double g_p_mutate_gene = 0.05;
 
 struct MyIndividual : varga::Individual<std::vector<double> > {
     MyIndividual()
@@ -73,10 +73,8 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
 
     void mutate(varga::Settings& s, const std::function<double(void)>& rnd01)
     {
-        assert(s.custom_parameter.find("p_mutation_gene") !=
-               s.custom_parameter.end());
-        if (rnd01() < s.custom_parameter["p_mutation_gene"]) {
-            assert(genes.size() != 0);
+        assert(genes.size() != 0);
+        if (rnd01() < s.p_mutate_gene) {
             size_t mutation_i = rnd01() * genes.size();
             genes[mutation_i] = rnd01();
         }
@@ -86,9 +84,9 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
 int main()
 {
     varga::Settings s{g_population_size, g_n_generations};
-    s.n_parents = g_n_parents;
+    s.n_parents_best = g_n_parents_best;
     s.progress_update_period = 10000;
-    s.custom_parameter["p_mutation_gene"] = g_p_mutation_gene;
+    s.p_mutate_gene = g_p_mutate_gene;
 
     varga::StateMachine<MyIndividual> sm{s};
     sm.init_functions = {varga::randomize_next_gen<MyIndividual>};
@@ -97,8 +95,7 @@ int main()
             varga::sort_next_gen_by_fitness<MyIndividual>,
             varga::print_progress<MyIndividual>,
             varga::change_generations<MyIndividual>,
-            varga::select_next_gen_parents_as_prev_gen_best<MyIndividual>,
-            varga::add_next_gen_individuals_from_parents<MyIndividual>,
+            varga::select_next_gen_parents<MyIndividual>,
             varga::add_next_gen_individuals_from_crossover<MyIndividual>,
             varga::next_gen_mutations<MyIndividual>};
     sm.closure_functions = {varga::print_stats<MyIndividual>,
