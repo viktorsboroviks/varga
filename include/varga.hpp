@@ -26,6 +26,7 @@ struct Settings {
     double p_replace_individual = 0.0;
     double p_replace_gene = 0.0;
     double p_mutate_gene = 0.0;
+    double p_mutate_bad_gene = 0.0;
     double p_swap_gene = 0.0;
 
     size_t progress_update_period = 0;
