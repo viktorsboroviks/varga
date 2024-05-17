@@ -14,6 +14,6 @@ format: include/varga.hpp examples/max_double_array.cpp
 	clang-format -i $^
 
 clean:
-	rm -rf `find . -name *.o`
-	rm -rf `find . -name *.csv`
-	rm -rf `find . -name *.txt`
+	rm -rf `find . -name "*.o"`
+	rm -rf `find . -name "*.csv"`
+	rm -rf `find . -name "*.txt"`

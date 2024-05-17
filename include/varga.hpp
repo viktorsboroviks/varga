@@ -1,5 +1,6 @@
 #include <cassert>
 #include <chrono>
+#include <deque>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -31,7 +32,7 @@ struct Settings {
 
     size_t progress_update_period = 0;
 
-    std::string best_fitness_log_filename{""};
+    std::string log_filename{""};
 
     size_t best_individual_csv_creation_period = n_generations;
     std::string best_individual_filename_prefix{"best_individual_gen"};
@@ -412,11 +413,11 @@ struct Population {
     double best_fitness = 0;
     std::vector<size_t> best_idx{};
     std::vector<TIndividual> parents{};
+};
 
-    void update_best_fitness()
-    {
-        best_fitness = *std::max_element(fitness.begin(), fitness.end());
-    }
+struct LogEntry {
+    size_t generation;
+    double fitness;
 };
 
 template <typename TIndividual>
@@ -435,9 +436,11 @@ public:
     // important! generations begin with 1st, not 0th
     size_t generation = 1;
     bool stop_state_machine = false;
-    std::vector<double> best_fitness_log;
     std::chrono::time_point<std::chrono::steady_clock> start_time;
     std::chrono::time_point<std::chrono::steady_clock> stop_time;
+
+    std::deque<LogEntry> log;
+    std::ofstream log_f;
 
     Context(Settings& s) :
         settings(s),
@@ -646,18 +649,37 @@ void create_stats_file(Context<TIndividual>& c)
 }
 
 template <typename TIndividual>
-void create_best_fitness_log_csv(Context<TIndividual>& c)
+void init_log(Context<TIndividual>& c)
 {
-    if (c.settings.best_fitness_log_filename.empty()) {
+    assert(!c.log_f.is_open());
+    if (c.settings.log_filename.empty()) {
         return;
     }
 
-    std::ofstream f(c.settings.best_fitness_log_filename);
-    f.is_open();
-    f << "generation,best_fitness" << std::endl;
-    for (size_t g = 0; g < c.settings.n_generations; g++) {
-        f << g << "," << c.best_fitness_log[g] << std::endl;
+    c.log_f.open(c.settings.log_filename);
+    c.log_f.is_open();
+    c.log_f << "generation,best_fitness" << std::endl;
+}
+
+template <typename TIndividual>
+void update_log(Context<TIndividual>& c)
+{
+    // update the log in program memory
+    const LogEntry new_log_entry{c.generation, c.next_generation.best_fitness};
+    c.log.push_back(new_log_entry);
+
+    // write the log to file
+    assert(!c.settings.log_filename.empty());
+    if (!c.log_f.is_open()) {
+        return;
     }
+    while (!c.log.empty()) {
+        const LogEntry val = c.log.front();
+        c.log.pop_front();
+
+        c.log_f << val.generation << "," << val.fitness << std::endl;
+    }
+    c.log_f << std::flush;
 }
 
 template <typename TIndividual>
@@ -698,9 +720,6 @@ void evaluate_next_gen(Context<TIndividual>& c)
                 c.next_generation.individuals[i].get_fitness(c.settings);
         c.next_generation.fitness.push_back(fitness);
     }
-
-    c.next_generation.update_best_fitness();
-    c.best_fitness_log.push_back(c.next_generation.best_fitness);
 }
 
 template <typename TIndividual>
@@ -721,6 +740,10 @@ void sort_next_gen_by_fitness(Context<TIndividual>& c)
                   return c.next_generation.fitness[a] >
                          c.next_generation.fitness[b];
               });
+
+    // update best fitness
+    const size_t best_i = c.next_generation.best_idx[0];
+    c.next_generation.best_fitness = c.next_generation.fitness[best_i];
 }
 
 template <typename TIndividual>
