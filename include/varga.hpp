@@ -803,10 +803,11 @@ void select_next_gen_parents(Context<TIndividual>& c)
 template <typename TIndividual>
 void add_next_gen_individuals_from_elite(Context<TIndividual>& c)
 {
-    assert(c.settings.population_size >=
-           (c.settings.n_elite_best + c.settings.n_elite_worst +
-            c.settings.n_elite_random));
-    assert(c.next_generation.individuals.size() == 0);
+    const size_t n_elite_total = c.settings.n_elite_best +
+                                 c.settings.n_elite_worst +
+                                 c.settings.n_elite_random;
+    assert(c.next_generation.individuals.size() + n_elite_total <=
+           c.settings.population_size);
 
     // best
     assert(c.prev_generation.best_idx.size() >= c.settings.n_elite_best);
@@ -835,9 +836,7 @@ void add_next_gen_individuals_from_elite(Context<TIndividual>& c)
                 c.prev_generation.individuals[elite_i]);
     }
 
-    assert(c.next_generation.individuals.size() ==
-           (c.settings.n_elite_best + c.settings.n_elite_worst +
-            c.settings.n_elite_random));
+    assert(c.next_generation.individuals.size() <= c.settings.population_size);
 }
 
 template <typename TIndividual>
@@ -847,12 +846,16 @@ void add_next_gen_individuals_from_crossover(Context<TIndividual>& c)
     assert(c.next_generation.parents.size() ==
            (c.settings.n_parents_best + c.settings.n_parents_worst +
             c.settings.n_parents_random + c.settings.n_parents_randomized));
-    assert(c.next_generation.individuals.size() ==
-           (c.settings.n_elite_best + c.settings.n_elite_worst +
-            c.settings.n_elite_random));
 
-    for (size_t i = c.next_generation.individuals.size();
-         i < c.settings.population_size; i++) {
+    const size_t n_elite_total = c.settings.n_elite_best +
+                                 c.settings.n_elite_worst +
+                                 c.settings.n_elite_random;
+    assert(n_elite_total <= c.settings.population_size);
+    const size_t n_children_total = c.settings.population_size - n_elite_total;
+    assert(c.next_generation.individuals.size() + n_children_total <=
+           c.settings.population_size);
+
+    for (size_t i = 0; i < n_children_total; i++) {
         size_t parent_a_i =
                 c.random.rnd01() * c.next_generation.parents.size();
         size_t parent_b_i;
@@ -868,7 +871,7 @@ void add_next_gen_individuals_from_crossover(Context<TIndividual>& c)
         c.next_generation.individuals.push_back(child);
     }
 
-    assert(c.next_generation.individuals.size() == c.settings.population_size);
+    assert(c.next_generation.individuals.size() <= c.settings.population_size);
 }
 
 template <typename TIndividual>
