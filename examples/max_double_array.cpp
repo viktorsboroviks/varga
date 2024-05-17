@@ -89,10 +89,12 @@ int main()
     s.p_mutate_gene = g_p_mutate_gene;
 
     varga::StateMachine<MyIndividual> sm{s};
-    sm.init_functions = {varga::randomize_next_gen<MyIndividual>};
+    sm.init_functions = {varga::init_log<MyIndividual>,
+                         varga::randomize_next_gen<MyIndividual>};
     sm.state_functions = {
             varga::evaluate_next_gen<MyIndividual>,
             varga::sort_next_gen_by_fitness<MyIndividual>,
+            varga::update_log<MyIndividual>,
             varga::print_progress<MyIndividual>,
             varga::change_generations<MyIndividual>,
             varga::select_next_gen_parents<MyIndividual>,
@@ -100,7 +102,6 @@ int main()
             varga::next_gen_mutations<MyIndividual>};
     sm.closure_functions = {varga::print_stats<MyIndividual>,
                             varga::create_stats_file<MyIndividual>,
-                            varga::create_best_fitness_log_csv<MyIndividual>,
                             varga::create_best_individual_csv<MyIndividual>};
     sm.run();
     return 0;
