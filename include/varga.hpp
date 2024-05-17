@@ -19,8 +19,11 @@ struct Settings {
 
     size_t n_generations;
     size_t population_size;
-    size_t n_elite = 0;
+    size_t n_elite_best = 0;
+    size_t n_elite_worst = 0;
+    size_t n_elite_random = 0;
     size_t n_parents_best = 0;
+    size_t n_parents_worst = 0;
     size_t n_parents_random = 0;
     size_t n_parents_randomized = 0;
 
@@ -494,12 +497,18 @@ public:
            << settings.population_size << std::endl;
         ss << std::left << std::setw(first_col_width) << "parents best"
            << settings.n_parents_best << std::endl;
+        ss << std::left << std::setw(first_col_width) << "parents worst"
+           << settings.n_parents_worst << std::endl;
         ss << std::left << std::setw(first_col_width) << "parents random"
            << settings.n_parents_random << std::endl;
         ss << std::left << std::setw(first_col_width) << "parents randomized"
            << settings.n_parents_randomized << std::endl;
-        ss << std::left << std::setw(first_col_width) << "elite"
-           << settings.n_elite << std::endl;
+        ss << std::left << std::setw(first_col_width) << "elite best"
+           << settings.n_elite_best << std::endl;
+        ss << std::left << std::setw(first_col_width) << "elite worst"
+           << settings.n_elite_worst << std::endl;
+        ss << std::left << std::setw(first_col_width) << "elite random"
+           << settings.n_elite_random << std::endl;
         ss << std::endl;
         // custom parameters
         for (const auto& pair : settings.custom_parameter) {
@@ -755,7 +764,17 @@ void select_next_gen_parents(Context<TIndividual>& c)
     // best
     assert(c.prev_generation.best_idx.size() >= c.settings.n_parents_best);
     for (size_t i = 0; i < c.settings.n_parents_best; i++) {
-        size_t parent_i = c.prev_generation.best_idx[i];
+        const size_t parent_i = c.prev_generation.best_idx[i];
+        c.next_generation.parents.push_back(
+                c.prev_generation.individuals[parent_i]);
+    }
+
+    // worst
+    assert(c.prev_generation.best_idx.size() >= c.settings.n_parents_worst);
+    for (size_t i = 0; i < c.settings.n_parents_worst; i++) {
+        const size_t parent_i =
+                c.prev_generation
+                        .best_idx[c.prev_generation.best_idx.size() - i - 1];
         c.next_generation.parents.push_back(
                 c.prev_generation.individuals[parent_i]);
     }
@@ -763,7 +782,8 @@ void select_next_gen_parents(Context<TIndividual>& c)
     // random
     assert(c.prev_generation.best_idx.size() >= c.settings.n_parents_random);
     for (size_t i = 0; i < c.settings.n_parents_random; i++) {
-        size_t parent_i = c.random.rnd01() * c.prev_generation.best_idx.size();
+        const size_t parent_i =
+                c.random.rnd01() * c.prev_generation.best_idx.size();
         c.next_generation.parents.push_back(
                 c.prev_generation.individuals[parent_i]);
     }
@@ -776,26 +796,48 @@ void select_next_gen_parents(Context<TIndividual>& c)
     }
 
     assert(c.next_generation.parents.size() ==
-           (c.settings.n_parents_best + c.settings.n_parents_random +
-            c.settings.n_parents_randomized));
+           (c.settings.n_parents_best + c.settings.n_parents_worst +
+            c.settings.n_parents_random + c.settings.n_parents_randomized));
 }
 
 template <typename TIndividual>
 void add_next_gen_individuals_from_elite(Context<TIndividual>& c)
 {
-    assert(c.next_generation.parents.size() ==
-           (c.settings.n_parents_best + c.settings.n_parents_random +
-            c.settings.n_parents_randomized));
+    assert(c.settings.population_size >=
+           (c.settings.n_elite_best + c.settings.n_elite_worst +
+            c.settings.n_elite_random));
     assert(c.next_generation.individuals.size() == 0);
 
-    assert(c.prev_generation.best_idx.size() >= c.settings.n_elite);
-    for (size_t i = 0; i < c.settings.n_elite; i++) {
-        size_t elite_i = c.prev_generation.best_idx[i];
+    // best
+    assert(c.prev_generation.best_idx.size() >= c.settings.n_elite_best);
+    for (size_t i = 0; i < c.settings.n_elite_best; i++) {
+        const size_t elite_i = c.prev_generation.best_idx[i];
         c.next_generation.individuals.push_back(
                 c.prev_generation.individuals[elite_i]);
     }
 
-    assert(c.next_generation.individuals.size() == c.settings.n_elite);
+    // worst
+    assert(c.prev_generation.best_idx.size() >= c.settings.n_elite_worst);
+    for (size_t i = 0; i < c.settings.n_elite_worst; i++) {
+        const size_t elite_i =
+                c.prev_generation
+                        .best_idx[c.prev_generation.best_idx.size() - i - 1];
+        c.next_generation.individuals.push_back(
+                c.prev_generation.individuals[elite_i]);
+    }
+
+    // random
+    assert(c.prev_generation.best_idx.size() >= c.settings.n_elite_random);
+    for (size_t i = 0; i < c.settings.n_elite_random; i++) {
+        const size_t elite_i =
+                c.random.rnd01() * c.prev_generation.best_idx.size();
+        c.next_generation.individuals.push_back(
+                c.prev_generation.individuals[elite_i]);
+    }
+
+    assert(c.next_generation.individuals.size() ==
+           (c.settings.n_elite_best + c.settings.n_elite_worst +
+            c.settings.n_elite_random));
 }
 
 template <typename TIndividual>
@@ -803,9 +845,11 @@ void add_next_gen_individuals_from_crossover(Context<TIndividual>& c)
 {
     assert(c.next_generation.parents.size() >= 2);
     assert(c.next_generation.parents.size() ==
-           (c.settings.n_parents_best + c.settings.n_parents_random +
-            c.settings.n_parents_randomized));
-    assert(c.next_generation.individuals.size() == c.settings.n_elite);
+           (c.settings.n_parents_best + c.settings.n_parents_worst +
+            c.settings.n_parents_random + c.settings.n_parents_randomized));
+    assert(c.next_generation.individuals.size() ==
+           (c.settings.n_elite_best + c.settings.n_elite_worst +
+            c.settings.n_elite_random));
 
     for (size_t i = c.next_generation.individuals.size();
          i < c.settings.population_size; i++) {
