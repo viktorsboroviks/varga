@@ -8,6 +8,7 @@ const size_t g_population_size = 10;
 const size_t g_individual_n_genes = 100;
 const size_t g_n_parents_best = 3;
 const double g_p_mutate_gene = 0.05;
+const std::string g_log_filename = "max_double_array_log.csv";
 
 struct MyIndividual : varga::Individual<std::vector<double> > {
     MyIndividual()
@@ -51,16 +52,20 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
         for (auto& g : genes) {
             g = rnd01();
         }
+        _genes_changed = true;
     }
 
     double get_fitness(varga::Settings& s)
     {
         (void)s;
-        double fitness = 0;
-        for (auto& g : genes) {
-            fitness += g;
+        if (_genes_changed) {
+            _fitness = 0;
+            for (auto& g : genes) {
+                _fitness += g;
+            }
+            _genes_changed = false;
         }
-        return fitness;
+        return _fitness;
     }
 
     void crossover(varga::Settings& s,
@@ -77,6 +82,7 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
         if (rnd01() < s.p_mutate_gene) {
             size_t mutation_i = rnd01() * genes.size();
             genes[mutation_i] = rnd01();
+            _genes_changed = true;
         }
     }
 };
@@ -87,12 +93,12 @@ int main()
     s.n_parents_best = g_n_parents_best;
     s.progress_update_period = 10000;
     s.p_mutate_gene = g_p_mutate_gene;
+    s.log_filename = g_log_filename;
 
     varga::StateMachine<MyIndividual> sm{s};
     sm.init_functions = {varga::init_log<MyIndividual>,
                          varga::randomize_next_gen<MyIndividual>};
     sm.state_functions = {
-            varga::evaluate_next_gen<MyIndividual>,
             varga::sort_next_gen_by_fitness<MyIndividual>,
             varga::update_log<MyIndividual>,
             varga::print_progress<MyIndividual>,

@@ -228,7 +228,13 @@ public:
 //     - Generator.generate(Context)
 
 template <typename TGenes>
-struct Individual {
+class Individual {
+protected:
+    // set to true every time genes change
+    bool _genes_changed = true;
+    double _fitness = 0.0;
+
+public:
     TGenes genes;
 
     // virtual destructor is required if virtual methods are used
@@ -247,11 +253,12 @@ struct Individual {
         std::cout << "error: create_csv not implemented" << std::endl;
     }
 
-    virtual void randomize(Settings& s,
+    virtual void randomize(varga::Settings& s,
                            const std::function<double(void)>& rnd01)
     {
         (void)s;
         (void)rnd01();
+        _genes_changed = true;
         std::cout << "error: randomize method not implemented" << std::endl;
     }
 
@@ -297,6 +304,7 @@ struct Individual {
                 genes[i] = parent_b.genes[i];
             }
         }
+        _genes_changed = true;
     }
 
     template <typename TIndividual>
@@ -306,6 +314,7 @@ struct Individual {
                              TIndividual& parent_b)
     {
         (void)s;
+
         assert(genes.size() != 0);
         assert(parent_a.genes.size() != 0);
         assert(parent_b.genes.size() != 0);
@@ -319,6 +328,7 @@ struct Individual {
             else
                 genes[i] = parent_b.genes[i];
         }
+        _genes_changed = true;
     }
 
     template <typename TIndividual>
@@ -328,6 +338,7 @@ struct Individual {
                              TIndividual& parent_b)
     {
         (void)s;
+
         assert(genes.size() != 0);
         assert(parent_a.genes.size() != 0);
         assert(parent_b.genes.size() != 0);
@@ -352,6 +363,7 @@ struct Individual {
             else
                 genes[i] = parent_b.genes[i];
         }
+        _genes_changed = true;
     }
 
     template <typename TIndividual>
@@ -365,6 +377,7 @@ struct Individual {
             for (size_t i = 0; i < genes.size(); i++) {
                 genes[i] = all_individuals[src_idx].genes[i];
             }
+            _genes_changed = true;
             return;
         }
 
@@ -373,6 +386,7 @@ struct Individual {
             if (rnd01() < s.p_replace_gene) {
                 const size_t src_idx = rnd01() * genes.size();
                 g = genes[src_idx];
+                _genes_changed = true;
             }
         }
     }
@@ -396,6 +410,7 @@ struct Individual {
             const auto store_gene = genes[i1];
             genes[i1] = genes[i2];
             genes[i2] = store_gene;
+            _genes_changed = true;
         }
     }
 
@@ -405,6 +420,7 @@ struct Individual {
         // I leave it virtual
         (void)s;
         (void)rnd01;
+        _genes_changed = true;
         std::cout << "error: mutate method not implemented" << std::endl;
     }
 };
@@ -412,7 +428,6 @@ struct Individual {
 template <typename TIndividual>
 struct Population {
     std::vector<TIndividual> individuals{};
-    std::vector<double> fitness{};
     double best_fitness = 0;
     std::vector<size_t> best_idx{};
     std::vector<TIndividual> parents{};
@@ -467,7 +482,6 @@ public:
         // clean the space for the next generation
         next_generation.individuals.resize(0);
         next_generation.parents.resize(0);
-        next_generation.fitness.resize(0);
         next_generation.best_idx.resize(0);
     }
 
@@ -587,8 +601,8 @@ void print_context(Context<TIndividual>& c)
     for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
         std::cout << "\t[" << i << "]:" << std::endl
                   << "\t\tindividuals:" << std::endl
-                  << c.next_generation.individuals[i].str(3)
-                  << "\t\tfitness: " << c.next_generation.fitness[i]
+                  << c.next_generation.individuals[i].str(3) << "\t\tfitness: "
+                  << c.next_generation.individuals[i].get_fitness(c.settings)
                   << std::endl;
     }
     std::cout << "\tbest_idx:" << std::endl;
@@ -614,8 +628,9 @@ void print_fitness(Context<TIndividual>& c)
     std::cout << "geneation: " << c.generation << std::endl;
     std::cout << "\tnext_generation:" << std::endl;
     std::cout << "\t\tfitness:" << std::endl;
-    for (size_t i = 0; i < c.next_generation.fitness.size(); i++) {
-        std::cout << "\t\t\t[" << i << "]:" << c.next_generation.fitness[i]
+    for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
+        std::cout << "\t\t\t[" << i << "]:"
+                  << c.next_generation.individuals[i].get_fitness(c.settings)
                   << std::endl;
     }
     std::cout << "\t\tbest_fitness: " << c.next_generation.best_fitness
@@ -718,25 +733,10 @@ void randomize_next_gen(Context<TIndividual>& c)
 }
 
 template <typename TIndividual>
-void evaluate_next_gen(Context<TIndividual>& c)
-{
-    assert(c.next_generation.individuals.size() == c.settings.population_size);
-    assert(c.next_generation.fitness.size() == 0);
-
-    // calculate fitness
-    for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
-        const double fitness =
-                c.next_generation.individuals[i].get_fitness(c.settings);
-        c.next_generation.fitness.push_back(fitness);
-    }
-}
-
-template <typename TIndividual>
 void sort_next_gen_by_fitness(Context<TIndividual>& c)
 {
     // init .best_idx
     assert(c.next_generation.individuals.size() == c.settings.population_size);
-    assert(c.next_generation.fitness.size() == c.settings.population_size);
     assert(c.next_generation.best_idx.size() == 0);
     for (size_t i = 0; i < c.settings.population_size; i++) {
         c.next_generation.best_idx.push_back(i);
@@ -746,13 +746,16 @@ void sort_next_gen_by_fitness(Context<TIndividual>& c)
     std::sort(c.next_generation.best_idx.begin(),
               c.next_generation.best_idx.end(),
               [&c](size_t a, size_t b) -> bool {
-                  return c.next_generation.fitness[a] >
-                         c.next_generation.fitness[b];
+                  return c.next_generation.individuals[a].get_fitness(
+                                 c.settings) >
+                         c.next_generation.individuals[b].get_fitness(
+                                 c.settings);
               });
 
     // update best fitness
     const size_t best_i = c.next_generation.best_idx[0];
-    c.next_generation.best_fitness = c.next_generation.fitness[best_i];
+    c.next_generation.best_fitness =
+            c.next_generation.individuals[best_i].get_fitness(c.settings);
 }
 
 template <typename TIndividual>
