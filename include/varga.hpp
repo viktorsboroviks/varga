@@ -509,6 +509,12 @@ public:
            << settings.n_generations << std::endl;
         ss << std::left << std::setw(first_col_width) << "population"
            << settings.population_size << std::endl;
+        ss << std::left << std::setw(first_col_width) << "elite best"
+           << settings.n_elite_best << std::endl;
+        ss << std::left << std::setw(first_col_width) << "elite worst"
+           << settings.n_elite_worst << std::endl;
+        ss << std::left << std::setw(first_col_width) << "elite random"
+           << settings.n_elite_random << std::endl;
         ss << std::left << std::setw(first_col_width) << "parents best"
            << settings.n_parents_best << std::endl;
         ss << std::left << std::setw(first_col_width) << "parents worst"
@@ -517,12 +523,16 @@ public:
            << settings.n_parents_random << std::endl;
         ss << std::left << std::setw(first_col_width) << "parents randomized"
            << settings.n_parents_randomized << std::endl;
-        ss << std::left << std::setw(first_col_width) << "elite best"
-           << settings.n_elite_best << std::endl;
-        ss << std::left << std::setw(first_col_width) << "elite worst"
-           << settings.n_elite_worst << std::endl;
-        ss << std::left << std::setw(first_col_width) << "elite random"
-           << settings.n_elite_random << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p replace individual"
+           << settings.p_replace_individual << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p replace gene"
+           << settings.p_replace_gene << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p swap gene"
+           << settings.p_swap_gene << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p mutate gene"
+           << settings.p_mutate_gene << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p mutate bad gene"
+           << settings.p_mutate_bad_gene << std::endl;
         ss << std::endl;
         // custom parameters
         for (const auto& pair : settings.custom_parameter) {
