@@ -814,11 +814,13 @@ void select_next_gen_parents(Context<TSolution>& c)
 template <typename TSolution>
 void add_next_gen_solutions_from_elite(Context<TSolution>& c)
 {
+#ifndef NDEBUG
     const size_t n_elite_total = c.settings.n_elite_best +
                                  c.settings.n_elite_worst +
                                  c.settings.n_elite_random;
     assert(c.next_generation.solutions.size() + n_elite_total <=
            c.settings.population_size);
+#endif
 
     // best
     assert(c.prev_generation.best_idx.size() >= c.settings.n_elite_best);
