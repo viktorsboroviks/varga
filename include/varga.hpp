@@ -27,18 +27,18 @@ struct Settings {
     size_t n_parents_random = 0;
     size_t n_parents_randomized = 0;
 
-    double p_replace_individual = 0.0;
-    double p_replace_gene = 0.0;
-    double p_mutate_gene = 0.0;
-    double p_mutate_bad_gene = 0.0;
-    double p_swap_gene = 0.0;
+    double p_replace_solution = 0.0;
+    double p_replace_data = 0.0;
+    double p_mutate_data = 0.0;
+    double p_mutate_bad_data = 0.0;
+    double p_swap_data = 0.0;
 
     size_t progress_update_period = 0;
 
     std::string log_filename{""};
 
-    size_t best_individual_csv_creation_period = n_generations;
-    std::string best_individual_filename_prefix{"best_individual_gen"};
+    size_t best_solution_csv_creation_period = n_generations;
+    std::string best_solution_filename_prefix{"best_solution_gen"};
 
     std::string stats_filename{"stats.txt"};
 
@@ -215,9 +215,9 @@ public:
 };
 
 // base classes:
-// - Individual
-//   - stores values and fitness
-// - Polulation(Individual)
+// - Solution
+//   - stores values and value
+// - Polulation(Solution)
 // - Context(Populations)
 //   - holds all calculation data, including Populations
 //   - initializes first Population
@@ -227,18 +227,18 @@ public:
 //     - Evaluator.evaluate(Context)
 //     - Generator.generate(Context)
 
-template <typename TGenes>
-class Individual {
+template <typename TData>
+class Solution {
 protected:
-    // set to true every time genes change
-    bool _genes_changed = true;
-    double _fitness = 0.0;
+    // set to true every time solution changes
+    bool _changed = true;
+    double _value = 0.0;
 
 public:
-    TGenes genes;
+    TData data;
 
     // virtual destructor is required if virtual methods are used
-    virtual ~Individual() {}
+    virtual ~Solution() {}
 
     virtual std::string str(size_t n_tabs = 0)
     {
@@ -258,22 +258,22 @@ public:
     {
         (void)s;
         (void)rnd01();
-        _genes_changed = true;
+        _changed = true;
         std::cout << "error: randomize method not implemented" << std::endl;
     }
 
-    virtual double get_fitness(Settings& s)
+    virtual double get_value(Settings& s)
     {
         (void)s;
-        std::cout << "error: get_fitness method not implemented" << std::endl;
+        std::cout << "error: get_value method not implemented" << std::endl;
         return -1.0;
     }
 
-    template <typename TIndividual>
+    template <typename TSolution>
     void crossover(Settings& s,
                    const std::function<double(void)>& rnd01,
-                   TIndividual& parent_a,
-                   TIndividual& parent_b)
+                   TSolution& parent_a,
+                   TSolution& parent_b)
     {
         (void)s;
         (void)rnd01();
@@ -284,172 +284,172 @@ public:
                   << std::endl;
     }
 
-    template <typename TIndividual>
+    template <typename TSolution>
     void uniform_crossover(Settings& s,
                            const std::function<double(void)>& rnd01,
-                           TIndividual& parent_a,
-                           TIndividual& parent_b)
+                           TSolution& parent_a,
+                           TSolution& parent_b)
     {
         (void)s;
-        assert(genes.size() != 0);
-        assert(parent_a.genes.size() != 0);
-        assert(parent_b.genes.size() != 0);
-        assert(genes.size() == parent_a.genes.size());
-        assert(parent_a.genes.size() == parent_b.genes.size());
-        for (size_t i = 0; i < genes.size(); i++) {
+        assert(data.size() != 0);
+        assert(parent_a.data.size() != 0);
+        assert(parent_b.data.size() != 0);
+        assert(data.size() == parent_a.data.size());
+        assert(parent_a.data.size() == parent_b.data.size());
+        for (size_t i = 0; i < data.size(); i++) {
             if (rnd01() < 0.5) {
-                genes[i] = parent_a.genes[i];
+                data[i] = parent_a.data[i];
             }
             else {
-                genes[i] = parent_b.genes[i];
+                data[i] = parent_b.data[i];
             }
         }
-        _genes_changed = true;
+        _changed = true;
     }
 
-    template <typename TIndividual>
+    template <typename TSolution>
     void one_point_crossover(Settings& s,
                              const std::function<double(void)>& rnd01,
-                             TIndividual& parent_a,
-                             TIndividual& parent_b)
+                             TSolution& parent_a,
+                             TSolution& parent_b)
     {
         (void)s;
 
-        assert(genes.size() != 0);
-        assert(parent_a.genes.size() != 0);
-        assert(parent_b.genes.size() != 0);
-        assert(genes.size() == parent_a.genes.size());
-        assert(parent_a.genes.size() == parent_b.genes.size());
+        assert(data.size() != 0);
+        assert(parent_a.data.size() != 0);
+        assert(parent_b.data.size() != 0);
+        assert(data.size() == parent_a.data.size());
+        assert(parent_a.data.size() == parent_b.data.size());
 
-        const size_t point = rnd01() * genes.size();
-        for (size_t i = 0; i < genes.size(); i++) {
+        const size_t point = rnd01() * data.size();
+        for (size_t i = 0; i < data.size(); i++) {
             if (i < point)
-                genes[i] = parent_a.genes[i];
+                data[i] = parent_a.data[i];
             else
-                genes[i] = parent_b.genes[i];
+                data[i] = parent_b.data[i];
         }
-        _genes_changed = true;
+        _changed = true;
     }
 
-    template <typename TIndividual>
+    template <typename TSolution>
     void two_point_crossover(Settings& s,
                              const std::function<double(void)>& rnd01,
-                             TIndividual& parent_a,
-                             TIndividual& parent_b)
+                             TSolution& parent_a,
+                             TSolution& parent_b)
     {
         (void)s;
 
-        assert(genes.size() != 0);
-        assert(parent_a.genes.size() != 0);
-        assert(parent_b.genes.size() != 0);
-        assert(genes.size() == parent_a.genes.size());
-        assert(parent_a.genes.size() == parent_b.genes.size());
+        assert(data.size() != 0);
+        assert(parent_a.data.size() != 0);
+        assert(parent_b.data.size() != 0);
+        assert(data.size() == parent_a.data.size());
+        assert(parent_a.data.size() == parent_b.data.size());
         size_t point_a;
         do {
-            point_a = rnd01() * genes.size();
-            if (point_a < (genes.size() - 1))
+            point_a = rnd01() * data.size();
+            if (point_a < (data.size() - 1))
                 break;
         } while (true);
         size_t point_b;
         do {
-            point_b = rnd01() * genes.size();
+            point_b = rnd01() * data.size();
             if (point_b > point_a)
                 break;
         } while (true);
 
-        for (size_t i = 0; i < genes.size(); i++) {
+        for (size_t i = 0; i < data.size(); i++) {
             if (i < point_a || i > point_b)
-                genes[i] = parent_a.genes[i];
+                data[i] = parent_a.data[i];
             else
-                genes[i] = parent_b.genes[i];
+                data[i] = parent_b.data[i];
         }
-        _genes_changed = true;
+        _changed = true;
     }
 
-    template <typename TIndividual>
+    template <typename TSolution>
     void replace(Settings& s,
                  const std::function<double(void)>& rnd01,
-                 const std::vector<TIndividual>& all_individuals)
+                 const std::vector<TSolution>& all_solutions)
     {
-        // replace individual (all genes)
-        if (rnd01() < s.p_replace_individual) {
-            const size_t src_idx = rnd01() * all_individuals.size();
-            for (size_t i = 0; i < genes.size(); i++) {
-                genes[i] = all_individuals[src_idx].genes[i];
+        // replace solution (all data)
+        if (rnd01() < s.p_replace_solution) {
+            const size_t src_idx = rnd01() * all_solutions.size();
+            for (size_t i = 0; i < data.size(); i++) {
+                data[i] = all_solutions[src_idx].data[i];
             }
-            _genes_changed = true;
+            _changed = true;
             return;
         }
 
-        // replace gene
-        for (auto& g : genes) {
-            if (rnd01() < s.p_replace_gene) {
-                const size_t src_idx = rnd01() * genes.size();
-                g = genes[src_idx];
-                _genes_changed = true;
+        // replace data
+        for (auto& d : data) {
+            if (rnd01() < s.p_replace_data) {
+                const size_t src_idx = rnd01() * data.size();
+                d = data[src_idx];
+                _changed = true;
             }
         }
     }
 
-    template <typename TIndividual>
+    template <typename TSolution>
     void swap(Settings& s,
               const std::function<double(void)>& rnd01,
-              const std::vector<TIndividual>& all_individuals)
+              const std::vector<TSolution>& all_solutions)
     {
         // follows the same approach as replace() for simplicity
 
-        // swap individuals
+        // swap solutions
         // there is currently no use case for this, but it might be helpful
         // in some configurations in the future.
-        (void)all_individuals;
+        (void)all_solutions;
 
-        // swap gene
-        if (rnd01() < s.p_swap_gene) {
-            const size_t i1 = rnd01() * genes.size();
-            const size_t i2 = rnd01() * genes.size();
-            const auto store_gene = genes[i1];
-            genes[i1] = genes[i2];
-            genes[i2] = store_gene;
-            _genes_changed = true;
+        // swap data
+        if (rnd01() < s.p_swap_data) {
+            const size_t i1 = rnd01() * data.size();
+            const size_t i2 = rnd01() * data.size();
+            const auto store_data = data[i1];
+            data[i1] = data[i2];
+            data[i2] = store_data;
+            _changed = true;
         }
     }
 
     virtual void mutate(Settings& s, const std::function<double(void)>& rnd01)
     {
-        // this method is very individual-specific, so to not overthink it
+        // this method is very solution-specific, so to not overthink it
         // I leave it virtual
         (void)s;
         (void)rnd01;
-        _genes_changed = true;
+        _changed = true;
         std::cout << "error: mutate method not implemented" << std::endl;
     }
 };
 
-template <typename TIndividual>
+template <typename TSolution>
 struct Population {
-    std::vector<TIndividual> individuals{};
-    double best_fitness = 0;
+    std::vector<TSolution> solutions{};
+    double best_value = 0;
     std::vector<size_t> best_idx{};
-    std::vector<TIndividual> parents{};
+    std::vector<TSolution> parents{};
 };
 
 struct LogEntry {
     size_t generation;
-    double fitness;
+    double value;
 };
 
-template <typename TIndividual>
+template <typename TSolution>
 class Context {
 private:
-    Population<TIndividual> population_storage_a{};
-    Population<TIndividual> population_storage_b{};
+    Population<TSolution> population_storage_a{};
+    Population<TSolution> population_storage_b{};
 
 public:
     Settings settings;
     Random random{};
     Progress progress;
-    Population<TIndividual>& prev_generation;
-    Population<TIndividual>& next_generation;
+    Population<TSolution>& prev_generation;
+    Population<TSolution>& next_generation;
 
     // important! generations begin with 1st, not 0th
     size_t generation = 1;
@@ -480,15 +480,15 @@ public:
         }
 
         // clean the space for the next generation
-        next_generation.individuals.resize(0);
+        next_generation.solutions.resize(0);
         next_generation.parents.resize(0);
         next_generation.best_idx.resize(0);
     }
 
-    const std::string get_best_individual_csv_filename()
+    const std::string get_best_solution_csv_filename()
     {
         std::stringstream ss;
-        ss << settings.best_individual_filename_prefix << generation << ".csv";
+        ss << settings.best_solution_filename_prefix << generation << ".csv";
         return ss.str();
     }
 
@@ -498,10 +498,10 @@ public:
                 std::chrono::duration_cast<std::chrono::seconds>(stop_time -
                                                                  start_time)
                         .count();
-        const double individual_s =
+        const double solution_s =
                 (settings.population_size * settings.n_generations) /
                 runtime_s;
-        const double best_fitness = next_generation.best_fitness;
+        const double best_value = next_generation.best_value;
         const size_t first_col_width = 22;
         std::stringstream ss{};
         // standard parameters
@@ -523,16 +523,16 @@ public:
            << settings.n_parents_random << std::endl;
         ss << std::left << std::setw(first_col_width) << "parents randomized"
            << settings.n_parents_randomized << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p replace individual"
-           << settings.p_replace_individual << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p replace gene"
-           << settings.p_replace_gene << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p swap gene"
-           << settings.p_swap_gene << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p mutate gene"
-           << settings.p_mutate_gene << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p mutate bad gene"
-           << settings.p_mutate_bad_gene << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p replace solution"
+           << settings.p_replace_solution << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p replace data"
+           << settings.p_replace_data << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p swap data"
+           << settings.p_swap_data << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p mutate data"
+           << settings.p_mutate_data << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p mutate bad data"
+           << settings.p_mutate_bad_data << std::endl;
         ss << std::endl;
         // custom parameters
         for (const auto& pair : settings.custom_parameter) {
@@ -543,19 +543,19 @@ public:
         // runtime stats
         ss << std::left << std::setw(first_col_width) << "runtime"
            << seconds_to_hhmmss_string(runtime_s) << std::endl;
-        ss << std::left << std::setw(first_col_width) << "individuals/s"
-           << individual_s << std::endl;
-        ss << std::left << std::setw(first_col_width) << "best fitness"
-           << best_fitness << std::endl;
+        ss << std::left << std::setw(first_col_width) << "solutions/s"
+           << solution_s << std::endl;
+        ss << std::left << std::setw(first_col_width) << "best value"
+           << best_value << std::endl;
         return ss.str();
     }
 };
 
-template <typename TIndividual>
+template <typename TSolution>
 class StateMachine {
 private:
-    typedef std::function<void(Context<TIndividual>&)> state_function_t;
-    Context<TIndividual> context;
+    typedef std::function<void(Context<TSolution>&)> state_function_t;
+    Context<TSolution> context;
 
 public:
     std::vector<state_function_t> init_functions{};
@@ -592,8 +592,8 @@ public:
 // state machine states
 // functions ot type StateMachinte::state_function_t
 
-template <typename TIndividual>
-void change_generations(Context<TIndividual>& c)
+template <typename TSolution>
+void change_generations(Context<TSolution>& c)
 {
     if (c.generation >= c.settings.n_generations) {
         c.stop_state_machine = true;
@@ -603,16 +603,16 @@ void change_generations(Context<TIndividual>& c)
     c.swap_generations();
 }
 
-template <typename TIndividual>
-void print_context(Context<TIndividual>& c)
+template <typename TSolution>
+void print_context(Context<TSolution>& c)
 {
     std::cout << "geneation: " << c.generation << std::endl;
     std::cout << "next_generation: " << std::endl;
-    for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
+    for (size_t i = 0; i < c.next_generation.solutions.size(); i++) {
         std::cout << "\t[" << i << "]:" << std::endl
-                  << "\t\tindividuals:" << std::endl
-                  << c.next_generation.individuals[i].str(3) << "\t\tfitness: "
-                  << c.next_generation.individuals[i].get_fitness(c.settings)
+                  << "\t\tsolutions:" << std::endl
+                  << c.next_generation.solutions[i].str(3) << "\t\tvalue: "
+                  << c.next_generation.solutions[i].get_value(c.settings)
                   << std::endl;
     }
     std::cout << "\tbest_idx:" << std::endl;
@@ -621,10 +621,10 @@ void print_context(Context<TIndividual>& c)
                   << std::endl;
     }
     std::cout << "next_generation: " << std::endl;
-    for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
+    for (size_t i = 0; i < c.next_generation.solutions.size(); i++) {
         std::cout << "\t[" << i << "]:" << std::endl
-                  << "\t\tindividuals:" << std::endl
-                  << c.next_generation.individuals[i].str(3);
+                  << "\t\tsolutions:" << std::endl
+                  << c.next_generation.solutions[i].str(3);
     }
     std::cout << "\tparents:" << std::endl;
     for (size_t i = 0; i < c.next_generation.parents.size(); i++) {
@@ -632,46 +632,46 @@ void print_context(Context<TIndividual>& c)
     }
 }
 
-template <typename TIndividual>
-void print_fitness(Context<TIndividual>& c)
+template <typename TSolution>
+void print_value(Context<TSolution>& c)
 {
     std::cout << "geneation: " << c.generation << std::endl;
     std::cout << "\tnext_generation:" << std::endl;
-    std::cout << "\t\tfitness:" << std::endl;
-    for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
+    std::cout << "\t\tvalue:" << std::endl;
+    for (size_t i = 0; i < c.next_generation.solutions.size(); i++) {
         std::cout << "\t\t\t[" << i << "]:"
-                  << c.next_generation.individuals[i].get_fitness(c.settings)
+                  << c.next_generation.solutions[i].get_value(c.settings)
                   << std::endl;
     }
-    std::cout << "\t\tbest_fitness: " << c.next_generation.best_fitness
+    std::cout << "\t\tbest_value: " << c.next_generation.best_value
               << std::endl;
 }
 
-template <typename TIndividual>
-void print_progress(Context<TIndividual>& c)
+template <typename TSolution>
+void print_progress(Context<TSolution>& c)
 {
     std::stringstream ss;
-    ss << " best fitness " << c.next_generation.best_fitness;
+    ss << " best value " << c.next_generation.best_value;
     c.progress.update(std::string(ss.str()));
 }
 
-template <typename TIndividual>
-void print_result(Context<TIndividual>& c)
+template <typename TSolution>
+void print_result(Context<TSolution>& c)
 {
     std::stringstream ss;
     size_t best_idx = c.next_generation.best_idx[0];
     std::cout << "best result:" << std::endl;
-    std::cout << c.next_generation.individuals[best_idx].str(1) << std::endl;
+    std::cout << c.next_generation.solutions[best_idx].str(1) << std::endl;
 }
 
-template <typename TIndividual>
-void print_stats(Context<TIndividual>& c)
+template <typename TSolution>
+void print_stats(Context<TSolution>& c)
 {
     std::cout << c.get_stats();
 }
 
-template <typename TIndividual>
-void create_stats_file(Context<TIndividual>& c)
+template <typename TSolution>
+void create_stats_file(Context<TSolution>& c)
 {
     if (c.settings.stats_filename.empty()) {
         return;
@@ -682,8 +682,8 @@ void create_stats_file(Context<TIndividual>& c)
     f << c.get_stats();
 }
 
-template <typename TIndividual>
-void init_log(Context<TIndividual>& c)
+template <typename TSolution>
+void init_log(Context<TSolution>& c)
 {
     assert(!c.log_f.is_open());
     if (c.settings.log_filename.empty()) {
@@ -692,14 +692,14 @@ void init_log(Context<TIndividual>& c)
 
     c.log_f.open(c.settings.log_filename);
     c.log_f.is_open();
-    c.log_f << "generation,best_fitness" << std::endl;
+    c.log_f << "generation,best_value" << std::endl;
 }
 
-template <typename TIndividual>
-void update_log(Context<TIndividual>& c)
+template <typename TSolution>
+void update_log(Context<TSolution>& c)
 {
     // update the log in program memory
-    const LogEntry new_log_entry{c.generation, c.next_generation.best_fitness};
+    const LogEntry new_log_entry{c.generation, c.next_generation.best_value};
     c.log.push_back(new_log_entry);
 
     // write the log to file
@@ -711,42 +711,42 @@ void update_log(Context<TIndividual>& c)
         const LogEntry val = c.log.front();
         c.log.pop_front();
 
-        c.log_f << val.generation << "," << val.fitness << std::endl;
+        c.log_f << val.generation << "," << val.value << std::endl;
     }
     c.log_f << std::flush;
 }
 
-template <typename TIndividual>
-void create_best_individual_csv(Context<TIndividual>& c)
+template <typename TSolution>
+void create_best_solution_csv(Context<TSolution>& c)
 {
-    if (c.settings.best_individual_csv_creation_period != 0 &&
-        (c.generation % c.settings.best_individual_csv_creation_period) != 0) {
+    if (c.settings.best_solution_csv_creation_period != 0 &&
+        (c.generation % c.settings.best_solution_csv_creation_period) != 0) {
         return;
     }
 
-    TIndividual& best_individual =
-            c.next_generation.individuals[c.next_generation.best_idx[0]];
-    best_individual.create_csv(c.get_best_individual_csv_filename());
+    TSolution& best_solution =
+            c.next_generation.solutions[c.next_generation.best_idx[0]];
+    best_solution.create_csv(c.get_best_solution_csv_filename());
 }
 
-template <typename TIndividual>
-void randomize_next_gen(Context<TIndividual>& c)
+template <typename TSolution>
+void randomize_next_gen(Context<TSolution>& c)
 {
     assert(c.generation == 1);
-    assert(c.next_generation.individuals.size() == 0);
+    assert(c.next_generation.solutions.size() == 0);
 
     for (size_t i = 0; i < c.settings.population_size; i++) {
-        TIndividual individual;
-        individual.randomize(c.settings, [&c]() { return c.random.rnd01(); });
-        c.next_generation.individuals.push_back(individual);
+        TSolution solution;
+        solution.randomize(c.settings, [&c]() { return c.random.rnd01(); });
+        c.next_generation.solutions.push_back(solution);
     }
 }
 
-template <typename TIndividual>
-void sort_next_gen_by_fitness(Context<TIndividual>& c)
+template <typename TSolution>
+void sort_next_gen_by_value(Context<TSolution>& c)
 {
     // init .best_idx
-    assert(c.next_generation.individuals.size() == c.settings.population_size);
+    assert(c.next_generation.solutions.size() == c.settings.population_size);
     assert(c.next_generation.best_idx.size() == 0);
     for (size_t i = 0; i < c.settings.population_size; i++) {
         c.next_generation.best_idx.push_back(i);
@@ -756,20 +756,18 @@ void sort_next_gen_by_fitness(Context<TIndividual>& c)
     std::sort(c.next_generation.best_idx.begin(),
               c.next_generation.best_idx.end(),
               [&c](size_t a, size_t b) -> bool {
-                  return c.next_generation.individuals[a].get_fitness(
-                                 c.settings) >
-                         c.next_generation.individuals[b].get_fitness(
-                                 c.settings);
+                  return c.next_generation.solutions[a].get_value(c.settings) >
+                         c.next_generation.solutions[b].get_value(c.settings);
               });
 
-    // update best fitness
+    // update best value
     const size_t best_i = c.next_generation.best_idx[0];
-    c.next_generation.best_fitness =
-            c.next_generation.individuals[best_i].get_fitness(c.settings);
+    c.next_generation.best_value =
+            c.next_generation.solutions[best_i].get_value(c.settings);
 }
 
-template <typename TIndividual>
-void select_next_gen_parents(Context<TIndividual>& c)
+template <typename TSolution>
+void select_next_gen_parents(Context<TSolution>& c)
 {
     assert(c.prev_generation.best_idx.size() == c.settings.population_size);
     assert(c.next_generation.parents.size() == 0);
@@ -779,7 +777,7 @@ void select_next_gen_parents(Context<TIndividual>& c)
     for (size_t i = 0; i < c.settings.n_parents_best; i++) {
         const size_t parent_i = c.prev_generation.best_idx[i];
         c.next_generation.parents.push_back(
-                c.prev_generation.individuals[parent_i]);
+                c.prev_generation.solutions[parent_i]);
     }
 
     // worst
@@ -789,7 +787,7 @@ void select_next_gen_parents(Context<TIndividual>& c)
                 c.prev_generation
                         .best_idx[c.prev_generation.best_idx.size() - i - 1];
         c.next_generation.parents.push_back(
-                c.prev_generation.individuals[parent_i]);
+                c.prev_generation.solutions[parent_i]);
     }
 
     // random
@@ -798,14 +796,14 @@ void select_next_gen_parents(Context<TIndividual>& c)
         const size_t parent_i =
                 c.random.rnd01() * c.prev_generation.best_idx.size();
         c.next_generation.parents.push_back(
-                c.prev_generation.individuals[parent_i]);
+                c.prev_generation.solutions[parent_i]);
     }
 
     // randomized
     for (size_t i = 0; i < c.settings.n_parents_randomized; i++) {
-        TIndividual individual;
-        individual.randomize(c.settings, [&c]() { return c.random.rnd01(); });
-        c.next_generation.parents.push_back(individual);
+        TSolution solution;
+        solution.randomize(c.settings, [&c]() { return c.random.rnd01(); });
+        c.next_generation.parents.push_back(solution);
     }
 
     assert(c.next_generation.parents.size() ==
@@ -813,21 +811,23 @@ void select_next_gen_parents(Context<TIndividual>& c)
             c.settings.n_parents_random + c.settings.n_parents_randomized));
 }
 
-template <typename TIndividual>
-void add_next_gen_individuals_from_elite(Context<TIndividual>& c)
+template <typename TSolution>
+void add_next_gen_solutions_from_elite(Context<TSolution>& c)
 {
+#ifndef NDEBUG
     const size_t n_elite_total = c.settings.n_elite_best +
                                  c.settings.n_elite_worst +
                                  c.settings.n_elite_random;
-    assert(c.next_generation.individuals.size() + n_elite_total <=
+    assert(c.next_generation.solutions.size() + n_elite_total <=
            c.settings.population_size);
+#endif
 
     // best
     assert(c.prev_generation.best_idx.size() >= c.settings.n_elite_best);
     for (size_t i = 0; i < c.settings.n_elite_best; i++) {
         const size_t elite_i = c.prev_generation.best_idx[i];
-        c.next_generation.individuals.push_back(
-                c.prev_generation.individuals[elite_i]);
+        c.next_generation.solutions.push_back(
+                c.prev_generation.solutions[elite_i]);
     }
 
     // worst
@@ -836,8 +836,8 @@ void add_next_gen_individuals_from_elite(Context<TIndividual>& c)
         const size_t elite_i =
                 c.prev_generation
                         .best_idx[c.prev_generation.best_idx.size() - i - 1];
-        c.next_generation.individuals.push_back(
-                c.prev_generation.individuals[elite_i]);
+        c.next_generation.solutions.push_back(
+                c.prev_generation.solutions[elite_i]);
     }
 
     // random
@@ -845,15 +845,15 @@ void add_next_gen_individuals_from_elite(Context<TIndividual>& c)
     for (size_t i = 0; i < c.settings.n_elite_random; i++) {
         const size_t elite_i =
                 c.random.rnd01() * c.prev_generation.best_idx.size();
-        c.next_generation.individuals.push_back(
-                c.prev_generation.individuals[elite_i]);
+        c.next_generation.solutions.push_back(
+                c.prev_generation.solutions[elite_i]);
     }
 
-    assert(c.next_generation.individuals.size() <= c.settings.population_size);
+    assert(c.next_generation.solutions.size() <= c.settings.population_size);
 }
 
-template <typename TIndividual>
-void add_next_gen_individuals_from_crossover(Context<TIndividual>& c)
+template <typename TSolution>
+void add_next_gen_solutions_from_crossover(Context<TSolution>& c)
 {
     assert(c.next_generation.parents.size() >= 2);
     assert(c.next_generation.parents.size() ==
@@ -865,7 +865,7 @@ void add_next_gen_individuals_from_crossover(Context<TIndividual>& c)
                                  c.settings.n_elite_random;
     assert(n_elite_total <= c.settings.population_size);
     const size_t n_children_total = c.settings.population_size - n_elite_total;
-    assert(c.next_generation.individuals.size() + n_children_total <=
+    assert(c.next_generation.solutions.size() + n_children_total <=
            c.settings.population_size);
 
     for (size_t i = 0; i < n_children_total; i++) {
@@ -875,43 +875,43 @@ void add_next_gen_individuals_from_crossover(Context<TIndividual>& c)
         do {
             parent_b_i = c.random.rnd01() * c.next_generation.parents.size();
         } while (parent_b_i == parent_a_i);
-        TIndividual& parent_a = c.next_generation.parents[parent_a_i];
-        TIndividual& parent_b = c.next_generation.parents[parent_b_i];
-        TIndividual child{};
+        TSolution& parent_a = c.next_generation.parents[parent_a_i];
+        TSolution& parent_b = c.next_generation.parents[parent_b_i];
+        TSolution child{};
         child.crossover(
                 c.settings, [&c]() { return c.random.rnd01(); }, parent_a,
                 parent_b);
-        c.next_generation.individuals.push_back(child);
+        c.next_generation.solutions.push_back(child);
     }
 
-    assert(c.next_generation.individuals.size() <= c.settings.population_size);
+    assert(c.next_generation.solutions.size() <= c.settings.population_size);
 }
 
-template <typename TIndividual>
-void next_gen_replacements(Context<TIndividual>& c)
+template <typename TSolution>
+void next_gen_replacements(Context<TSolution>& c)
 {
-    for (auto& ind : c.next_generation.individuals) {
-        ind.replace(
+    for (auto& s : c.next_generation.solutions) {
+        s.replace(
                 c.settings, [&c]() { return c.random.rnd01(); },
-                c.next_generation.individuals);
+                c.next_generation.solutions);
     }
 }
 
-template <typename TIndividual>
-void next_gen_mutations(Context<TIndividual>& c)
+template <typename TSolution>
+void next_gen_mutations(Context<TSolution>& c)
 {
-    for (auto& ind : c.next_generation.individuals) {
-        ind.mutate(c.settings, [&c]() { return c.random.rnd01(); });
+    for (auto& s : c.next_generation.solutions) {
+        s.mutate(c.settings, [&c]() { return c.random.rnd01(); });
     }
 }
 
-template <typename TIndividual>
-void next_gen_swaps(Context<TIndividual>& c)
+template <typename TSolution>
+void next_gen_swaps(Context<TSolution>& c)
 {
-    for (auto& ind : c.next_generation.individuals) {
-        ind.swap(
+    for (auto& s : c.next_generation.solutions) {
+        s.swap(
                 c.settings, [&c]() { return c.random.rnd01(); },
-                c.next_generation.individuals);
+                c.next_generation.solutions);
     }
 }
 
