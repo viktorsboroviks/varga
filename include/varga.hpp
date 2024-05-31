@@ -159,11 +159,14 @@ public:
                 ss << c_no_fill;
             }
         }
+
+        const size_t n_max_strlen = std::to_string(n_max).length();
+
         ss << c_closing_bracket;
+        ss << " " << std::setfill('0') << std::setw(n_max_strlen) << n;
+        ss << "/" << n_max;
         ss << " " << std::fixed << std::setprecision(1)
            << (double)n / n_max * 100 << "%";
-        ss << " " << std::scientific << std::setprecision(1)
-           << get_iter_s(n_per_c) << "/s";
         double eta_s = get_eta_s(n_per_c);
         ss << " ETA " << seconds_to_hhmmss_string(eta_s);
         ss << text;
@@ -204,7 +207,7 @@ public:
         return eta_s;
     }
 
-    void os_clean(size_t n_chars = 100)
+    void os_clean(size_t n_chars = 200)
     {
         // overwrite command line with n_chars ' '
         for (size_t i = 0; i < n_chars; i++) {
@@ -456,6 +459,7 @@ public:
     bool stop_state_machine = false;
     std::chrono::time_point<std::chrono::steady_clock> start_time;
     std::chrono::time_point<std::chrono::steady_clock> stop_time;
+    double cycle_time_us = 0;
 
     std::deque<LogEntry> log;
     std::ofstream log_f;
@@ -573,6 +577,7 @@ public:
         for (state_function_t& f : init_functions) {
             f(context);
         }
+        auto cycle_begin_time = std::chrono::steady_clock::now();
         while (!context.stop_state_machine) {
             for (state_function_t& f : state_functions) {
                 if (context.stop_state_machine) {
@@ -581,6 +586,12 @@ public:
                 }
                 f(context);
             }
+            auto cycle_end_time = std::chrono::steady_clock::now();
+            context.cycle_time_us =
+                    std::chrono::duration_cast<std::chrono::microseconds>(
+                            cycle_end_time - cycle_begin_time)
+                            .count();
+            cycle_begin_time = cycle_end_time;
         }
         context.progress.os_clean();
         for (state_function_t& f : closure_functions) {
@@ -650,8 +661,13 @@ void print_value(Context<TSolution>& c)
 template <typename TSolution>
 void print_progress(Context<TSolution>& c)
 {
+    const double sol_s =
+            c.settings.population_size / c.cycle_time_us * 1000000;
+
     std::stringstream ss;
-    ss << " best value " << c.next_generation.best_value;
+    ss << " best " << c.next_generation.best_value;
+    ss << " sol/s " << sol_s;
+
     c.progress.update(std::string(ss.str()));
 }
 
