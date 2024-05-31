@@ -107,7 +107,7 @@ public:
     char c_closing_bracket = ']';
     char c_fill = '.';
     char c_no_fill = ' ';
-    size_t bar_len = 15;
+    size_t bar_len = 10;
     size_t n = 0;
     size_t n_max;
     size_t update_period;
@@ -171,7 +171,7 @@ public:
         ss << " ETA " << seconds_to_hhmmss_string(eta_s);
         ss << text;
         // overwrite remalining command line with ' '
-        const size_t n_chars = 10;
+        const size_t n_chars = 5;
         for (size_t i = 0; i < n_chars; i++) {
             ss << " ";
         }
