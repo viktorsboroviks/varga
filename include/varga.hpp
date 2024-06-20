@@ -28,10 +28,10 @@ struct Settings {
     size_t n_parents_randomized = 0;
 
     double p_replace_solution = 0.0;
-    double p_replace_data = 0.0;
-    double p_mutate_data = 0.0;
-    double p_mutate_bad_data = 0.0;
-    double p_swap_data = 0.0;
+    double p_replace_gene = 0.0;
+    double p_mutate_gene = 0.0;
+    double p_mutate_bad_gene = 0.0;
+    double p_swap_genes = 0.0;
 
     size_t progress_update_period = 0;
 
@@ -230,7 +230,7 @@ public:
 //     - Evaluator.evaluate(Context)
 //     - Generator.generate(Context)
 
-template <typename TData>
+template <typename TGenes>
 class Solution {
 protected:
     // set to true every time solution changes
@@ -238,7 +238,7 @@ protected:
     double _value = 0.0;
 
 public:
-    TData data;
+    TGenes genes;
 
     // virtual destructor is required if virtual methods are used
     virtual ~Solution() {}
@@ -294,17 +294,17 @@ public:
                            TSolution& parent_b)
     {
         (void)s;
-        assert(data.size() != 0);
-        assert(parent_a.data.size() != 0);
-        assert(parent_b.data.size() != 0);
-        assert(data.size() == parent_a.data.size());
-        assert(parent_a.data.size() == parent_b.data.size());
-        for (size_t i = 0; i < data.size(); i++) {
+        assert(genes.size() != 0);
+        assert(parent_a.genes.size() != 0);
+        assert(parent_b.genes.size() != 0);
+        assert(genes.size() == parent_a.genes.size());
+        assert(parent_a.genes.size() == parent_b.genes.size());
+        for (size_t i = 0; i < genes.size(); i++) {
             if (rnd01() < 0.5) {
-                data[i] = parent_a.data[i];
+                genes[i] = parent_a.genes[i];
             }
             else {
-                data[i] = parent_b.data[i];
+                genes[i] = parent_b.genes[i];
             }
         }
         _changed = true;
@@ -318,18 +318,18 @@ public:
     {
         (void)s;
 
-        assert(data.size() != 0);
-        assert(parent_a.data.size() != 0);
-        assert(parent_b.data.size() != 0);
-        assert(data.size() == parent_a.data.size());
-        assert(parent_a.data.size() == parent_b.data.size());
+        assert(genes.size() != 0);
+        assert(parent_a.genes.size() != 0);
+        assert(parent_b.genes.size() != 0);
+        assert(genes.size() == parent_a.genes.size());
+        assert(parent_a.genes.size() == parent_b.genes.size());
 
-        const size_t point = rnd01() * data.size();
-        for (size_t i = 0; i < data.size(); i++) {
+        const size_t point = rnd01() * genes.size();
+        for (size_t i = 0; i < genes.size(); i++) {
             if (i < point)
-                data[i] = parent_a.data[i];
+                genes[i] = parent_a.genes[i];
             else
-                data[i] = parent_b.data[i];
+                genes[i] = parent_b.genes[i];
         }
         _changed = true;
     }
@@ -342,29 +342,29 @@ public:
     {
         (void)s;
 
-        assert(data.size() != 0);
-        assert(parent_a.data.size() != 0);
-        assert(parent_b.data.size() != 0);
-        assert(data.size() == parent_a.data.size());
-        assert(parent_a.data.size() == parent_b.data.size());
+        assert(genes.size() != 0);
+        assert(parent_a.genes.size() != 0);
+        assert(parent_b.genes.size() != 0);
+        assert(genes.size() == parent_a.genes.size());
+        assert(parent_a.genes.size() == parent_b.genes.size());
         size_t point_a;
         do {
-            point_a = rnd01() * data.size();
-            if (point_a < (data.size() - 1))
+            point_a = rnd01() * genes.size();
+            if (point_a < (genes.size() - 1))
                 break;
         } while (true);
         size_t point_b;
         do {
-            point_b = rnd01() * data.size();
+            point_b = rnd01() * genes.size();
             if (point_b > point_a)
                 break;
         } while (true);
 
-        for (size_t i = 0; i < data.size(); i++) {
+        for (size_t i = 0; i < genes.size(); i++) {
             if (i < point_a || i > point_b)
-                data[i] = parent_a.data[i];
+                genes[i] = parent_a.genes[i];
             else
-                data[i] = parent_b.data[i];
+                genes[i] = parent_b.genes[i];
         }
         _changed = true;
     }
@@ -374,21 +374,21 @@ public:
                  const std::function<double(void)>& rnd01,
                  const std::vector<TSolution>& all_solutions)
     {
-        // replace solution (all data)
+        // replace solution (all genes)
         if (rnd01() < s.p_replace_solution) {
             const size_t src_idx = rnd01() * all_solutions.size();
-            for (size_t i = 0; i < data.size(); i++) {
-                data[i] = all_solutions[src_idx].data[i];
+            for (size_t i = 0; i < genes.size(); i++) {
+                genes[i] = all_solutions[src_idx].genes[i];
             }
             _changed = true;
             return;
         }
 
-        // replace data
-        for (auto& d : data) {
-            if (rnd01() < s.p_replace_data) {
-                const size_t src_idx = rnd01() * data.size();
-                d = data[src_idx];
+        // replace genes
+        for (auto& d : genes) {
+            if (rnd01() < s.p_replace_gene) {
+                const size_t src_idx = rnd01() * genes.size();
+                d = genes[src_idx];
                 _changed = true;
             }
         }
@@ -406,13 +406,13 @@ public:
         // in some configurations in the future.
         (void)all_solutions;
 
-        // swap data
-        if (rnd01() < s.p_swap_data) {
-            const size_t i1 = rnd01() * data.size();
-            const size_t i2 = rnd01() * data.size();
-            const auto store_data = data[i1];
-            data[i1] = data[i2];
-            data[i2] = store_data;
+        // swap genes
+        if (rnd01() < s.p_swap_genes) {
+            const size_t i1 = rnd01() * genes.size();
+            const size_t i2 = rnd01() * genes.size();
+            const auto store_genes = genes[i1];
+            genes[i1] = genes[i2];
+            genes[i2] = store_genes;
             _changed = true;
         }
     }
@@ -529,14 +529,14 @@ public:
            << settings.n_parents_randomized << std::endl;
         ss << std::left << std::setw(first_col_width) << "p replace solution"
            << settings.p_replace_solution << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p replace data"
-           << settings.p_replace_data << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p swap data"
-           << settings.p_swap_data << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p mutate data"
-           << settings.p_mutate_data << std::endl;
-        ss << std::left << std::setw(first_col_width) << "p mutate bad data"
-           << settings.p_mutate_bad_data << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p replace gene"
+           << settings.p_replace_gene << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p swap genes"
+           << settings.p_swap_genes << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p mutate gene"
+           << settings.p_mutate_gene << std::endl;
+        ss << std::left << std::setw(first_col_width) << "p mutate bad gene"
+           << settings.p_mutate_bad_gene << std::endl;
         ss << std::endl;
         // custom parameters
         for (const auto& pair : settings.custom_parameter) {

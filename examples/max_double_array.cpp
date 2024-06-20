@@ -5,15 +5,15 @@
 
 const size_t g_n_generations = 1000000;
 const size_t g_population_size = 10;
-const size_t g_solution_n_data = 100;
+const size_t g_solution_n_genes = 100;
 const size_t g_n_parents_best = 3;
-const double g_p_mutate_data = 0.05;
+const double g_p_mutate_gene = 0.05;
 const std::string g_log_filename = "max_double_array_log.csv";
 
 struct MySolution : varga::Solution<std::vector<double> > {
     MySolution()
     {
-        data.resize(g_solution_n_data);
+        genes.resize(g_solution_n_genes);
     }
 
     std::string str(size_t n_tabs = 0)
@@ -22,13 +22,13 @@ struct MySolution : varga::Solution<std::vector<double> > {
         for (size_t n = 0; n < n_tabs; n++) {
             ss << "\t";
         }
-        ss << "data:" << std::endl;
-        for (size_t i = 0; i < data.size(); i++) {
+        ss << "genes:" << std::endl;
+        for (size_t i = 0; i < genes.size(); i++) {
             for (size_t n = 0; n < n_tabs; n++) {
                 ss << "\t";
             }
-            ss << "\t[" << i << "]:" << data[i];
-            if ((i + 1) != data.size()) {
+            ss << "\t[" << i << "]:" << genes[i];
+            if ((i + 1) != genes.size()) {
                 ss << std::endl;
             }
         }
@@ -40,8 +40,8 @@ struct MySolution : varga::Solution<std::vector<double> > {
         std::ofstream f(filename);
         f.is_open();
         f << "i,value" << std::endl;
-        for (size_t i = 0; i < data.size(); i++) {
-            f << i << "," << data[i] << std::endl;
+        for (size_t i = 0; i < genes.size(); i++) {
+            f << i << "," << genes[i] << std::endl;
         }
     }
 
@@ -49,8 +49,8 @@ struct MySolution : varga::Solution<std::vector<double> > {
                    const std::function<double(void)>& rnd01)
     {
         (void)s;
-        for (auto& d : data) {
-            d = rnd01();
+        for (auto& g : genes) {
+            g = rnd01();
         }
         _changed = true;
     }
@@ -60,8 +60,8 @@ struct MySolution : varga::Solution<std::vector<double> > {
         (void)s;
         if (_changed) {
             _value = 0;
-            for (auto& d : data) {
-                _value += d;
+            for (auto& g : genes) {
+                _value += g;
             }
             _changed = false;
         }
@@ -78,10 +78,10 @@ struct MySolution : varga::Solution<std::vector<double> > {
 
     void mutate(varga::Settings& s, const std::function<double(void)>& rnd01)
     {
-        assert(data.size() != 0);
-        if (rnd01() < s.p_mutate_data) {
-            size_t mutation_i = rnd01() * data.size();
-            data[mutation_i] = rnd01();
+        assert(genes.size() != 0);
+        if (rnd01() < s.p_mutate_gene) {
+            size_t mutation_i = rnd01() * genes.size();
+            genes[mutation_i] = rnd01();
             _changed = true;
         }
     }
@@ -92,7 +92,7 @@ int main()
     varga::Settings s{g_population_size, g_n_generations};
     s.n_parents_best = g_n_parents_best;
     s.progress_update_period = 10000;
-    s.p_mutate_data = g_p_mutate_data;
+    s.p_mutate_gene = g_p_mutate_gene;
     s.log_filename = g_log_filename;
 
     varga::StateMachine<MySolution> sm{s};
