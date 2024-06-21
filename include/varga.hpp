@@ -13,42 +13,6 @@
 
 namespace varga {
 
-// settings for Context and StateMachine
-struct Settings {
-    std::map<std::string, double> custom_parameter;
-
-    size_t n_generations;
-    size_t population_size;
-    size_t n_elite_best = 0;
-    size_t n_elite_worst = 0;
-    size_t n_elite_random = 0;
-    size_t n_parents_best = 0;
-    size_t n_parents_worst = 0;
-    size_t n_parents_random = 0;
-    size_t n_parents_randomized = 0;
-
-    double p_replace_individual = 0.0;
-    double p_replace_gene = 0.0;
-    double p_mutate_gene = 0.0;
-    double p_mutate_bad_gene = 0.0;
-    double p_swap_genes = 0.0;
-
-    size_t progress_update_period = 0;
-
-    std::string log_filename{""};
-
-    size_t best_individual_csv_creation_period = n_generations;
-    std::string best_individual_filename_prefix{"best_individual_gen"};
-
-    std::string stats_filename{"stats.txt"};
-
-    Settings(size_t in_population_size, size_t in_n_generations) :
-        n_generations(in_n_generations),
-        population_size(in_population_size)
-    {
-    }
-};
-
 // tools
 std::string seconds_to_hhmmss_string(const double seconds)
 {
@@ -214,6 +178,42 @@ public:
             os << " ";
         }
         os << "\r" << std::flush;
+    }
+};
+
+// settings for Context and StateMachine
+struct Settings {
+    std::map<std::string, double> custom_parameter;
+
+    size_t n_generations;
+    size_t population_size;
+    size_t n_elite_best = 0;
+    size_t n_elite_worst = 0;
+    size_t n_elite_random = 0;
+    size_t n_parents_best = 0;
+    size_t n_parents_worst = 0;
+    size_t n_parents_random = 0;
+    size_t n_parents_randomized = 0;
+
+    double p_replace_individual = 0.0;
+    double p_replace_gene = 0.0;
+    double p_mutate_gene = 0.0;
+    double p_mutate_bad_gene = 0.0;
+    double p_swap_genes = 0.0;
+
+    size_t progress_update_period = 0;
+
+    std::string log_filename{""};
+
+    size_t best_individual_csv_creation_period = n_generations;
+    std::string best_individual_filename_prefix{"best_individual_gen"};
+
+    std::string stats_filename{"stats.txt"};
+
+    Settings(size_t in_population_size, size_t in_n_generations) :
+        n_generations(in_n_generations),
+        population_size(in_population_size)
+    {
     }
 };
 
