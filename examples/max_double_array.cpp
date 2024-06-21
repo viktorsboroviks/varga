@@ -39,7 +39,7 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
     {
         std::ofstream f(filename);
         f.is_open();
-        f << "i,value" << std::endl;
+        f << "i,fitness" << std::endl;
         for (size_t i = 0; i < genes.size(); i++) {
             f << i << "," << genes[i] << std::endl;
         }
@@ -55,17 +55,17 @@ struct MyIndividual : varga::Individual<std::vector<double> > {
         _changed = true;
     }
 
-    double get_value(varga::Settings& s)
+    double get_fitness(varga::Settings& s)
     {
         (void)s;
         if (_changed) {
-            _value = 0;
+            _fitness = 0;
             for (auto& g : genes) {
-                _value += g;
+                _fitness += g;
             }
             _changed = false;
         }
-        return _value;
+        return _fitness;
     }
 
     void crossover(varga::Settings& s,
@@ -99,7 +99,7 @@ int main()
     sm.init_functions = {varga::init_log<MyIndividual>,
                          varga::randomize_next_gen<MyIndividual>};
     sm.state_functions = {
-            varga::sort_next_gen_by_value<MyIndividual>,
+            varga::sort_next_gen_by_fitness<MyIndividual>,
             varga::update_log<MyIndividual>,
             varga::print_progress<MyIndividual>,
             varga::change_generations<MyIndividual>,

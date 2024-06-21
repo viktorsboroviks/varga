@@ -235,7 +235,7 @@ class Individual {
 protected:
     // set to true every time individual changes
     bool _changed = true;
-    double _value = 0.0;
+    double _fitness = 0.0;
 
 public:
     TGenes genes;
@@ -265,10 +265,10 @@ public:
         std::cout << "error: randomize method not implemented" << std::endl;
     }
 
-    virtual double get_value(Settings& s)
+    virtual double get_fitness(Settings& s)
     {
         (void)s;
-        std::cout << "error: get_value method not implemented" << std::endl;
+        std::cout << "error: get_fitness method not implemented" << std::endl;
         return -1.0;
     }
 
@@ -431,14 +431,14 @@ public:
 template <typename TIndividual>
 struct Population {
     std::vector<TIndividual> individuals{};
-    double best_value = 0;
+    double best_fitness = 0;
     std::vector<size_t> best_idx{};
     std::vector<TIndividual> parents{};
 };
 
 struct LogEntry {
     size_t generation;
-    double value;
+    double fitness;
 };
 
 template <typename TIndividual>
@@ -505,7 +505,7 @@ public:
         const double individual_s =
                 (settings.population_size * settings.n_generations) /
                 runtime_s;
-        const double best_value = next_generation.best_value;
+        const double best_fitness = next_generation.best_fitness;
         const size_t first_col_width = 22;
         std::stringstream ss{};
         // standard parameters
@@ -549,8 +549,8 @@ public:
            << seconds_to_hhmmss_string(runtime_s) << std::endl;
         ss << std::left << std::setw(first_col_width) << "individuals/s"
            << individual_s << std::endl;
-        ss << std::left << std::setw(first_col_width) << "best value"
-           << best_value << std::endl;
+        ss << std::left << std::setw(first_col_width) << "best fitness"
+           << best_fitness << std::endl;
         return ss.str();
     }
 };
@@ -622,8 +622,8 @@ void print_context(Context<TIndividual>& c)
     for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
         std::cout << "\t[" << i << "]:" << std::endl
                   << "\t\tindividuals:" << std::endl
-                  << c.next_generation.individuals[i].str(3) << "\t\tvalue: "
-                  << c.next_generation.individuals[i].get_value(c.settings)
+                  << c.next_generation.individuals[i].str(3) << "\t\tfitness: "
+                  << c.next_generation.individuals[i].get_fitness(c.settings)
                   << std::endl;
     }
     std::cout << "\tbest_idx:" << std::endl;
@@ -644,17 +644,17 @@ void print_context(Context<TIndividual>& c)
 }
 
 template <typename TIndividual>
-void print_value(Context<TIndividual>& c)
+void print_fitness(Context<TIndividual>& c)
 {
     std::cout << "geneation: " << c.generation << std::endl;
     std::cout << "\tnext_generation:" << std::endl;
-    std::cout << "\t\tvalue:" << std::endl;
+    std::cout << "\t\tfitness:" << std::endl;
     for (size_t i = 0; i < c.next_generation.individuals.size(); i++) {
         std::cout << "\t\t\t[" << i << "]:"
-                  << c.next_generation.individuals[i].get_value(c.settings)
+                  << c.next_generation.individuals[i].get_fitness(c.settings)
                   << std::endl;
     }
-    std::cout << "\t\tbest_value: " << c.next_generation.best_value
+    std::cout << "\t\tbest_fitness: " << c.next_generation.best_fitness
               << std::endl;
 }
 
@@ -665,7 +665,7 @@ void print_progress(Context<TIndividual>& c)
             c.settings.population_size / c.cycle_time_us * 1000000;
 
     std::stringstream ss;
-    ss << " best " << c.next_generation.best_value;
+    ss << " best " << c.next_generation.best_fitness;
     ss << " ind/s " << ind_s;
 
     c.progress.update(std::string(ss.str()));
@@ -708,14 +708,14 @@ void init_log(Context<TIndividual>& c)
 
     c.log_f.open(c.settings.log_filename);
     c.log_f.is_open();
-    c.log_f << "generation,best_value" << std::endl;
+    c.log_f << "generation,best_fitness" << std::endl;
 }
 
 template <typename TIndividual>
 void update_log(Context<TIndividual>& c)
 {
     // update the log in program memory
-    const LogEntry new_log_entry{c.generation, c.next_generation.best_value};
+    const LogEntry new_log_entry{c.generation, c.next_generation.best_fitness};
     c.log.push_back(new_log_entry);
 
     // write the log to file
@@ -727,7 +727,7 @@ void update_log(Context<TIndividual>& c)
         const LogEntry val = c.log.front();
         c.log.pop_front();
 
-        c.log_f << val.generation << "," << val.value << std::endl;
+        c.log_f << val.generation << "," << val.fitness << std::endl;
     }
     c.log_f << std::flush;
 }
@@ -759,7 +759,7 @@ void randomize_next_gen(Context<TIndividual>& c)
 }
 
 template <typename TIndividual>
-void sort_next_gen_by_value(Context<TIndividual>& c)
+void sort_next_gen_by_fitness(Context<TIndividual>& c)
 {
     // init .best_idx
     assert(c.next_generation.individuals.size() == c.settings.population_size);
@@ -772,14 +772,14 @@ void sort_next_gen_by_value(Context<TIndividual>& c)
     std::sort(c.next_generation.best_idx.begin(),
               c.next_generation.best_idx.end(),
               [&c](size_t a, size_t b) -> bool {
-                  return c.next_generation.individuals[a].get_value(c.settings) >
-                         c.next_generation.individuals[b].get_value(c.settings);
+                  return c.next_generation.individuals[a].get_fitness(c.settings) >
+                         c.next_generation.individuals[b].get_fitness(c.settings);
               });
 
-    // update best value
+    // update best fitness
     const size_t best_i = c.next_generation.best_idx[0];
-    c.next_generation.best_value =
-            c.next_generation.individuals[best_i].get_value(c.settings);
+    c.next_generation.best_fitness =
+            c.next_generation.individuals[best_i].get_fitness(c.settings);
 }
 
 template <typename TIndividual>
