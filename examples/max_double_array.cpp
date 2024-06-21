@@ -3,17 +3,17 @@
 
 #include "varga.hpp"
 
-const size_t g_n_generations = 1000000;
+const size_t g_n_generations = 100000;
 const size_t g_population_size = 10;
-const size_t g_solution_n_genes = 100;
+const size_t g_individual_n_genes = 100;
 const size_t g_n_parents_best = 3;
 const double g_p_mutate_gene = 0.05;
 const std::string g_log_filename = "max_double_array_log.csv";
 
-struct MySolution : varga::Solution<std::vector<double> > {
-    MySolution()
+struct MyIndividual : varga::Individual<std::vector<double> > {
+    MyIndividual()
     {
-        genes.resize(g_solution_n_genes);
+        genes.resize(g_individual_n_genes);
     }
 
     std::string str(size_t n_tabs = 0)
@@ -70,8 +70,8 @@ struct MySolution : varga::Solution<std::vector<double> > {
 
     void crossover(varga::Settings& s,
                    const std::function<double(void)>& rnd01,
-                   varga::Solution<std::vector<double> >& parent_a,
-                   varga::Solution<std::vector<double> >& parent_b)
+                   varga::Individual<std::vector<double> >& parent_a,
+                   varga::Individual<std::vector<double> >& parent_b)
     {
         uniform_crossover(s, rnd01, parent_a, parent_b);
     }
@@ -95,20 +95,20 @@ int main()
     s.p_mutate_gene = g_p_mutate_gene;
     s.log_filename = g_log_filename;
 
-    varga::StateMachine<MySolution> sm{s};
-    sm.init_functions = {varga::init_log<MySolution>,
-                         varga::randomize_next_gen<MySolution>};
+    varga::StateMachine<MyIndividual> sm{s};
+    sm.init_functions = {varga::init_log<MyIndividual>,
+                         varga::randomize_next_gen<MyIndividual>};
     sm.state_functions = {
-            varga::sort_next_gen_by_value<MySolution>,
-            varga::update_log<MySolution>,
-            varga::print_progress<MySolution>,
-            varga::change_generations<MySolution>,
-            varga::select_next_gen_parents<MySolution>,
-            varga::add_next_gen_solutions_from_crossover<MySolution>,
-            varga::next_gen_mutations<MySolution>};
-    sm.closure_functions = {varga::print_stats<MySolution>,
-                            varga::create_stats_file<MySolution>,
-                            varga::create_best_solution_csv<MySolution>};
+            varga::sort_next_gen_by_value<MyIndividual>,
+            varga::update_log<MyIndividual>,
+            varga::print_progress<MyIndividual>,
+            varga::change_generations<MyIndividual>,
+            varga::select_next_gen_parents<MyIndividual>,
+            varga::add_next_gen_individuals_from_crossover<MyIndividual>,
+            varga::next_gen_mutations<MyIndividual>};
+    sm.closure_functions = {varga::print_stats<MyIndividual>,
+                            varga::create_stats_file<MyIndividual>,
+                            varga::create_best_individual_csv<MyIndividual>};
     sm.run();
     return 0;
 }
